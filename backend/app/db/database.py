@@ -1,5 +1,3 @@
-import json
-
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
@@ -88,7 +86,6 @@ def create_order_record(*, email: str, currency: str, items: list[dict], total_a
             status="pending",
             total_amount_cents=total_amount_cents,
             currency=currency,
-            items_snapshot=json.dumps(items),
         )
         db.add(order)
         db.flush()
