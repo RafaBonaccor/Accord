@@ -1,0 +1,10 @@
+.DS_Store
+node_modules
+.next
+*.pyc
+__pycache__
+.pytest_cache
+.mypy_cache
+.env
+.env.local
+accordi_jewelry.db
