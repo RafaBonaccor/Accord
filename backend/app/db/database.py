@@ -6,6 +6,7 @@ from sqlalchemy.orm import sessionmaker
 from app.core.config import settings
 from app.db.base import Base
 from app.models.order import Order
+from app.models.order_item import OrderItem
 from app.models.product import Product
 
 engine = create_engine(
@@ -90,6 +91,20 @@ def create_order_record(*, email: str, currency: str, items: list[dict], total_a
             items_snapshot=json.dumps(items),
         )
         db.add(order)
+        db.flush()
+
+        for item in items:
+            db.add(
+                OrderItem(
+                    order_id=order.id,
+                    product_id=item["product_id"],
+                    product_name=item["name"],
+                    unit_amount_cents=item["unit_amount_cents"],
+                    quantity=item["quantity"],
+                    image_url=item["image_url"],
+                )
+            )
+
         db.commit()
         db.refresh(order)
         return order

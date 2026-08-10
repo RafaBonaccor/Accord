@@ -5,7 +5,7 @@ Base e-commerce per gioielli con frontend Next.js e backend FastAPI, catalogo pr
 ## Struttura
 
 - `frontend`: storefront Next.js 14 con App Router
-- `backend`: API FastAPI con SQLite e Stripe Checkout
+- `backend`: API FastAPI con Stripe Checkout e supporto Postgres/Supabase
 
 ## Avvio con Docker
 
@@ -35,7 +35,13 @@ pip install -r backend/requirements.txt
 cp backend/.env.example backend/.env
 ```
 
-4. Avvia l'API:
+4. Se usi Supabase, importa prima lo schema SQL:
+
+```sql
+-- esegui backend/supabase_schema.sql nel SQL Editor di Supabase
+```
+
+5. Avvia l'API:
 
 ```bash
 uvicorn app.main:app --reload --app-dir backend
@@ -66,7 +72,7 @@ npm run dev
 
 ### Backend
 
-- `DATABASE_URL`: default SQLite locale
+- `DATABASE_URL`: URL Postgres/Supabase, ad esempio `postgresql+psycopg://...`
 - `STRIPE_SECRET_KEY`: chiave privata Stripe
 - `STRIPE_PRICE_CURRENCY`: valuta del checkout
 - `FRONTEND_URL`: URL frontend per redirect checkout
@@ -77,11 +83,19 @@ npm run dev
 
 ## Funzionalita incluse
 
-- Catalogo prodotti persistito in SQLite
+- Catalogo prodotti persistito su Postgres/Supabase
 - Seed automatico di prodotti demo stile gioielleria
 - API per listing e dettaglio prodotti
 - Carrello lato client
 - Creazione sessione Stripe Checkout dal backend
-- Persistenza locale di un record ordine prima del redirect a Stripe
+- Persistenza ordine relazionale con `orders` e `order_items` prima del redirect a Stripe
 - Campo email cliente nel carrello per precompilare il checkout
 - UI storefront responsive con hero, griglia prodotti e drawer carrello
+
+## Tabelle Supabase
+
+- `products`: catalogo prodotti
+- `orders`: testata ordine con stato, totale e sessione Stripe
+- `order_items`: righe ordine col snapshot del prodotto acquistato
+
+Lo schema pronto da usare e in `backend/supabase_schema.sql`.
