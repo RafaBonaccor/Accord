@@ -10,7 +10,7 @@ export const metadata: Metadata = {
     canonical: "/",
     languages: {
       it: "/",
-      en: "/italian-jewelry",
+      en: "/en",
       "x-default": "/",
     },
   },
@@ -26,6 +26,7 @@ export default async function HomePage() {
     url: "http://localhost:3000",
     description:
       "Italian jewelry brand con charm, anelli, bracciali e idee regalo per donna.",
+    inLanguage: "it",
     address: {
       "@type": "PostalAddress",
       addressCountry: "IT",
@@ -48,7 +49,7 @@ export default async function HomePage() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
       />
-      <Storefront products={products} />
+      <Storefront products={products} locale="it" />
     </>
   );
 }

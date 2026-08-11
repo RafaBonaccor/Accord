@@ -14,6 +14,7 @@ export async function getProducts(): Promise<Product[]> {
 
 export async function createCheckout(
   items: Array<{ product_id: number; quantity: number }>,
+  locale: "it" | "en",
   email?: string,
 ): Promise<string> {
   const response = await fetch(`${BROWSER_API_URL}/api/checkout`, {
@@ -21,7 +22,7 @@ export async function createCheckout(
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ items, email }),
+    body: JSON.stringify({ items, email, locale }),
   });
 
   if (!response.ok) {

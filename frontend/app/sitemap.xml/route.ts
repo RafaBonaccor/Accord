@@ -3,24 +3,47 @@ const BASE_URL = "http://localhost:3000";
 const urls = [
   {
     loc: `${BASE_URL}/`,
-    lastmod: "2026-08-10",
+    lastmod: "2026-08-11",
     changefreq: "weekly",
     priority: "1.0",
     alternates: [
       { hreflang: "it", href: `${BASE_URL}/` },
-      { hreflang: "en", href: `${BASE_URL}/italian-jewelry` },
+      { hreflang: "en", href: `${BASE_URL}/en` },
     ],
   },
   {
     loc: `${BASE_URL}/privacy`,
-    lastmod: "2026-08-10",
+    lastmod: "2026-08-11",
     changefreq: "yearly",
     priority: "0.3",
-    alternates: [],
+    alternates: [
+      { hreflang: "it", href: `${BASE_URL}/privacy` },
+      { hreflang: "en", href: `${BASE_URL}/en/privacy` },
+    ],
+  },
+  {
+    loc: `${BASE_URL}/en`,
+    lastmod: "2026-08-11",
+    changefreq: "weekly",
+    priority: "0.95",
+    alternates: [
+      { hreflang: "en", href: `${BASE_URL}/en` },
+      { hreflang: "it", href: `${BASE_URL}/` },
+    ],
+  },
+  {
+    loc: `${BASE_URL}/en/privacy`,
+    lastmod: "2026-08-11",
+    changefreq: "yearly",
+    priority: "0.3",
+    alternates: [
+      { hreflang: "en", href: `${BASE_URL}/en/privacy` },
+      { hreflang: "it", href: `${BASE_URL}/privacy` },
+    ],
   },
   {
     loc: `${BASE_URL}/italian-jewelry`,
-    lastmod: "2026-08-10",
+    lastmod: "2026-08-11",
     changefreq: "weekly",
     priority: "0.85",
     alternates: [
@@ -30,7 +53,7 @@ const urls = [
   },
   {
     loc: `${BASE_URL}/italian-jewelry-bracelets`,
-    lastmod: "2026-08-10",
+    lastmod: "2026-08-11",
     changefreq: "weekly",
     priority: "0.8",
     alternates: [
@@ -40,7 +63,7 @@ const urls = [
   },
   {
     loc: `${BASE_URL}/italian-charms`,
-    lastmod: "2026-08-10",
+    lastmod: "2026-08-11",
     changefreq: "weekly",
     priority: "0.78",
     alternates: [

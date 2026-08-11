@@ -1,21 +1,25 @@
 import type { Metadata } from "next";
 
-import { privacyCopy } from "../../lib/copy";
+import { privacyCopy } from "../../../lib/copy";
 
 export const metadata: Metadata = {
   title: "Privacy Policy",
   description:
-    "Informativa privacy di Accordi Jewelry per navigazione, checkout, contatti e gestione dei dati personali nel mercato italiano.",
+    "Privacy notice for Accordi Jewelry covering browsing, checkout, contact requests and personal data handling for the English storefront.",
   alternates: {
-    canonical: "/privacy",
+    canonical: "/en/privacy",
+    languages: {
+      en: "/en/privacy",
+      it: "/privacy",
+    },
   },
 };
 
-export default function PrivacyPage() {
-  const copy = privacyCopy.it;
+export default function EnglishPrivacyPage() {
+  const copy = privacyCopy.en;
 
   return (
-    <main className="legal-page">
+    <main className="legal-page" lang="en">
       <div className="legal-page-inner">
         <p className="legal-eyebrow">{copy.eyebrow}</p>
         <h1>{copy.title}</h1>

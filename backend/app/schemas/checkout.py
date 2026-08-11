@@ -8,6 +8,7 @@ class CheckoutRequestItem(BaseModel):
 
 class CheckoutRequest(BaseModel):
     email: str | None = None
+    locale: str | None = None
     items: list[CheckoutRequestItem]
 
 

@@ -1,8 +1,17 @@
+import Link from "next/link";
+
+import { supportCopy } from "../../../lib/copy";
+
 export default function CheckoutCancelPage() {
+  const copy = supportCopy.it;
+
   return (
     <main style={{ padding: "64px 24px", maxWidth: 720, margin: "0 auto" }}>
-      <h1>Checkout annullato</h1>
-      <p>Il pagamento non e stato completato. Il carrello resta disponibile lato client.</p>
+      <h1>{copy.cancelTitle}</h1>
+      <p>{copy.cancelBody}</p>
+      <p>
+        <Link href="/">{copy.backToStore}</Link>
+      </p>
     </main>
   );
 }

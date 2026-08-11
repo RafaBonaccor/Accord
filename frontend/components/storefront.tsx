@@ -3,6 +3,8 @@
 import Image from "next/image";
 import { useEffect, useState } from "react";
 
+import { storefrontCopy } from "../lib/copy";
+import { Locale } from "../lib/i18n";
 import { createCheckout } from "../lib/api";
 import { CartItem, Product } from "../lib/types";
 import styles from "./storefront.module.css";
@@ -11,14 +13,18 @@ const CART_STORAGE_KEY = "accordi-cart";
 
 type Props = {
   products: Product[];
+  locale: Locale;
 };
 
-export function Storefront({ products }: Props) {
+export function Storefront({ products, locale }: Props) {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [checkoutPending, setCheckoutPending] = useState(false);
   const [email, setEmail] = useState("");
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const featuredProducts = products.filter((product) => product.featured);
+  const copy = storefrontCopy[locale];
+  const englishSeoPath = "/italian-jewelry";
+  const languageSwitchPath = locale === "it" ? "/en" : "/";
 
   useEffect(() => {
     const saved = window.localStorage.getItem(CART_STORAGE_KEY);
@@ -65,11 +71,14 @@ export function Storefront({ products }: Props) {
           product_id: item.product.id,
           quantity: item.quantity,
         })),
+        locale,
         email || undefined,
       );
       window.location.href = url;
     } catch (error) {
-      setCheckoutError(error instanceof Error ? error.message : "Checkout non disponibile");
+      setCheckoutError(
+        error instanceof Error ? error.message : copy.checkoutUnavailable,
+      );
     } finally {
       setCheckoutPending(false);
     }
@@ -78,42 +87,39 @@ export function Storefront({ products }: Props) {
   const total = cart.reduce((sum, item) => sum + item.product.price_cents * item.quantity, 0);
 
   return (
-    <main className={styles.page}>
+    <main className={styles.page} lang={locale}>
       <section className={styles.hero}>
         <div className={styles.heroCopy}>
-          <p className={styles.eyebrow}>Italian Jewelry · Gioielli Italiani</p>
-          <h1>Italian jewelry online tra charm, anelli e bracciali da regalare.</h1>
-          <p className={styles.lead}>
-            Accordi Jewelry propone una selezione di Italian jewelry e gioielli donna online con
-            stile premium, design contemporaneo e una base e-commerce pronta per il mercato
-            italiano e per ricerche internazionali in inglese.
-          </p>
+          <p className={styles.eyebrow}>{copy.eyebrow}</p>
+          <h1>{copy.heroTitle}</h1>
+          <p className={styles.lead}>{copy.heroLead}</p>
           <div className={styles.heroActions}>
             <a href="#shop" className={styles.primaryLink}>
-              Acquista ora
+              {copy.primaryAction}
             </a>
             <a href="#campaign" className={styles.secondaryLink}>
-              Scopri la collezione
+              {copy.secondaryAction}
             </a>
-            <a href="/italian-jewelry" className={styles.secondaryLink}>
-              English page
+            <a href={languageSwitchPath} className={styles.secondaryLink}>
+              {copy.languageAction}
             </a>
           </div>
         </div>
         <div className={styles.heroVisual}>
           <div className={styles.heroVisualCard}>
-            <span>Best gift edit</span>
-            <strong>Shine in layers</strong>
-            <p>Mix di metalli caldi, charm iconici e silhouette pulite.</p>
+            <span>{copy.heroCardLabel}</span>
+            <strong>{copy.heroCardTitle}</strong>
+            <p>{copy.heroCardBody}</p>
           </div>
         </div>
       </section>
 
       <section className={styles.categoryStrip}>
-        <div className={styles.categoryPill}>Charm da collezione</div>
-        <div className={styles.categoryPill}>Bracciali iconici</div>
-        <div className={styles.categoryPill}>Anelli luminosi</div>
-        <div className={styles.categoryPill}>Gift sets</div>
+        {copy.categoryPills.map((pill) => (
+          <div key={pill} className={styles.categoryPill}>
+            {pill}
+          </div>
+        ))}
       </section>
 
       <div className={styles.contentLayout}>
@@ -139,7 +145,7 @@ export function Storefront({ products }: Props) {
                   <div className={styles.cardFooter}>
                     <span>€ {(product.price_cents / 100).toFixed(2)}</span>
                     <button type="button" onClick={() => addToCart(product)}>
-                      Aggiungi
+                      {copy.addToCart}
                     </button>
                   </div>
                 </div>
@@ -149,8 +155,8 @@ export function Storefront({ products }: Props) {
 
           <section id="shop" className={styles.gridSection}>
             <div className={styles.sectionHeader}>
-              <h2>Shop all jewelry</h2>
-              <p>Database prodotti FastAPI + SQLite, pronto per estensione catalogo.</p>
+              <h2>{copy.shopTitle}</h2>
+              <p>{copy.shopBody}</p>
             </div>
             <div className={styles.grid}>
               {products.map((product) => (
@@ -174,7 +180,7 @@ export function Storefront({ products }: Props) {
                     <div className={styles.cardFooter}>
                       <span>€ {(product.price_cents / 100).toFixed(2)}</span>
                       <button type="button" onClick={() => addToCart(product)}>
-                        Aggiungi
+                        {copy.addToCart}
                       </button>
                     </div>
                   </div>
@@ -185,45 +191,33 @@ export function Storefront({ products }: Props) {
 
           <section className={styles.seoSection}>
             <div className={styles.seoTextBlock}>
-              <p className={styles.meta}>Gioielleria online italiana · Italian jewelry</p>
-              <h2>Acquista gioielli donna online con un’identita italiana chiara e rilevanza internazionale.</h2>
-              <p className={styles.description}>
-                Questa homepage e pensata per intercettare ricerche come gioielli italiani,
-                gioielli donna online, italian jewelry, italian jewelry online, charm eleganti,
-                anelli da regalo e bracciali premium. Il tono visivo e commerciale aiuta il
-                posizionamento del brand su un target femminile interessato a gifting,
-                collezioni stagionali e acquisto diretto sia in italiano sia in inglese.
-              </p>
+              <p className={styles.meta}>{copy.seoMeta}</p>
+              <h2>{copy.seoTitle}</h2>
+              <p className={styles.description}>{copy.seoBody}</p>
             </div>
             <div className={styles.seoPoints}>
-              <div>
-                <strong>Keyword focus</strong>
-                <p>gioielli italiani, italian jewelry, italian jewelry online, anelli donna, charms e bracciali.</p>
-              </div>
-              <div>
-                <strong>Intento di ricerca</strong>
-                <p>Acquisto diretto, gift ideas, premium collections e modern italian jewelry.</p>
-              </div>
-              <div>
-                <strong>Contenuto bilingue SEO</strong>
-                <p>Copy e metadata pensati per keyword italiane e inglesi con focus su Italian jewelry.</p>
-              </div>
+              {copy.seoPoints.map((point) => (
+                <div key={point.title}>
+                  <strong>{point.title}</strong>
+                  <p>{point.body}</p>
+                </div>
+              ))}
             </div>
             <div className={styles.seoLinks}>
-              <a href="/italian-jewelry">Vai alla landing English SEO</a>
+              <a href={englishSeoPath}>{copy.seoLinkLabel}</a>
             </div>
           </section>
         </div>
 
         <aside id="cart" className={styles.cart}>
           <div className={styles.cartHeader}>
-            <h2>Shopping bag</h2>
-            <span>{cart.length} articoli</span>
+            <h2>{copy.cartTitle}</h2>
+            <span>{copy.cartItems(cart.length)}</span>
           </div>
 
           <div className={styles.cartItems}>
             {cart.length === 0 ? (
-              <p className={styles.empty}>Aggiungi i tuoi pezzi preferiti per iniziare il checkout.</p>
+              <p className={styles.empty}>{copy.cartEmpty}</p>
             ) : (
               cart.map((item) => (
                 <div key={item.product.id} className={styles.cartItem}>
@@ -247,26 +241,26 @@ export function Storefront({ products }: Props) {
 
           <div className={styles.cartFooter}>
             <label className={styles.emailField}>
-              <span>Email per l'ordine</span>
+              <span>{copy.orderEmail}</span>
               <input
                 type="email"
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
-                placeholder="cliente@accordi.com"
+                placeholder={copy.orderEmailPlaceholder}
               />
             </label>
-          <div className={styles.totalRow}>
-            <span>Totale</span>
-            <strong>€ {(total / 100).toFixed(2)}</strong>
-          </div>
-          {checkoutError ? <p className={styles.checkoutError}>{checkoutError}</p> : null}
-          <button
-            type="button"
-            className={styles.checkoutButton}
+            <div className={styles.totalRow}>
+              <span>{copy.totalLabel}</span>
+              <strong>€ {(total / 100).toFixed(2)}</strong>
+            </div>
+            {checkoutError ? <p className={styles.checkoutError}>{checkoutError}</p> : null}
+            <button
+              type="button"
+              className={styles.checkoutButton}
               onClick={handleCheckout}
               disabled={cart.length === 0 || checkoutPending}
             >
-              {checkoutPending ? "Reindirizzamento..." : "Vai al checkout"}
+              {checkoutPending ? copy.checkoutPending : copy.checkoutAction}
             </button>
           </div>
         </aside>

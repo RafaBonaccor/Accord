@@ -15,6 +15,10 @@ from app.services.stripe_service import (
 router = APIRouter()
 
 
+def checkout_base_path(locale: str | None) -> str:
+    return "/en" if locale == "en" else ""
+
+
 @router.get("/products", response_model=ProductListResponse)
 def list_products(db: Session = Depends(get_db)) -> ProductListResponse:
     products = db.query(Product).order_by(Product.featured.desc(), Product.id.asc()).all()
@@ -63,10 +67,11 @@ def checkout(payload: CheckoutRequest, db: Session = Depends(get_db)) -> Checkou
     )
 
     try:
+        base_path = checkout_base_path(payload.locale)
         checkout_url, stripe_session_id = create_checkout_session(
             items=line_items,
-            success_url=f"{settings.frontend_url}/checkout/success?order_id={order.id}",
-            cancel_url=f"{settings.frontend_url}/checkout/cancel",
+            success_url=f"{settings.frontend_url}{base_path}/checkout/success?order_id={order.id}",
+            cancel_url=f"{settings.frontend_url}{base_path}/checkout/cancel",
             currency=settings.stripe_price_currency,
             customer_email=payload.email,
         )

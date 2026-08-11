@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import { SiteChrome } from "../components/site-chrome";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -27,7 +27,7 @@ export const metadata: Metadata = {
     canonical: "/",
     languages: {
       it: "/",
-      en: "/italian-jewelry",
+      en: "/en",
       "x-default": "/",
     },
   },
@@ -50,72 +50,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html lang="it">
       <body>
-        <div className="site-shell">
-          <header className="site-header">
-            <div className="site-announcement">
-              Gioielli italiani online · Spedizione gratuita sopra € 120 · Gift packaging incluso
-            </div>
-            <div className="site-nav-wrap">
-              <nav className="site-nav">
-                <div className="site-nav-group">
-                  <Link href="/#shop">Nuovi arrivi</Link>
-                  <Link href="/#shop">Charm</Link>
-                  <Link href="/#shop">Bracciali</Link>
-                  <Link href="/#shop">Anelli</Link>
-                </div>
-                <Link href="/" className="site-brand">
-                  ACCORDI
-                </Link>
-                <div className="site-nav-group site-nav-group-right">
-                  <Link href="/#campaign">Collezione</Link>
-                  <Link href="/italian-jewelry">Italian Jewelry</Link>
-                  <Link href="/privacy">Privacy</Link>
-                </div>
-              </nav>
-            </div>
-          </header>
-
-          {children}
-
-          <footer className="site-footer">
-            <div className="site-footer-grid">
-              <div>
-                <p className="site-footer-eyebrow">Accordi Jewelry</p>
-                <h2>Gioielleria online italiana dal carattere contemporaneo.</h2>
-                <p>
-                  Base e-commerce per gioielli con catalogo, carrello e checkout pensata per un
-                  brand premium nel mercato italiano e per la crescita SEO internazionale su
-                  keyword come Italian jewelry.
-                </p>
-              </div>
-              <div>
-                <p className="site-footer-eyebrow">Shop</p>
-                <div className="site-footer-links">
-                  <Link href="/#shop">Anelli</Link>
-                  <Link href="/#shop">Bracciali</Link>
-                  <Link href="/#shop">Charm</Link>
-                  <Link href="/#campaign">Best seller</Link>
-                  <Link href="/italian-jewelry">Italian Jewelry</Link>
-                  <Link href="/italian-jewelry-bracelets">Italian Jewelry Bracelets</Link>
-                  <Link href="/italian-charms">Italian Charms</Link>
-                </div>
-              </div>
-              <div>
-                <p className="site-footer-eyebrow">Informazioni</p>
-                <div className="site-footer-links">
-                  <Link href="/privacy">Privacy Policy</Link>
-                  <Link href="/#cart">Shopping bag</Link>
-                  <Link href="/checkout/success">Esito ordine</Link>
-                  <a href="mailto:hello@accordijewelry.com">hello@accordijewelry.com</a>
-                </div>
-              </div>
-            </div>
-            <div className="site-footer-bottom">
-              <span>© 2026 Accordi Jewelry</span>
-              <span>Made for Italian jewelry SEO</span>
-            </div>
-          </footer>
-        </div>
+        <SiteChrome>{children}</SiteChrome>
       </body>
     </html>
   );
