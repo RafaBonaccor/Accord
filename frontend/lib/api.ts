@@ -8,6 +8,18 @@ const SERVER_API_URL =
 const BROWSER_API_URL =
   process.env.NEXT_PUBLIC_API_URL ?? process.env.NEXT_PUBLIC_BACKEND_URL ?? "/api";
 
+export class ApiRequestError extends Error {
+  status: number;
+  detail?: string;
+
+  constructor(message: string, status: number, detail?: string) {
+    super(message);
+    this.name = "ApiRequestError";
+    this.status = status;
+    this.detail = detail;
+  }
+}
+
 export async function getProducts(): Promise<Product[]> {
   const response = await fetch(`${SERVER_API_URL}/api/products`, { cache: "no-store" });
   if (!response.ok) {
@@ -28,25 +40,32 @@ export async function getProductBySlug(slug: string): Promise<Product | null> {
   return (await response.json()) as Product;
 }
 
-async function adminRequest<T>(path: string, token: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(`${BROWSER_API_URL}${path}`, {
-    ...init,
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-      ...(init?.headers ?? {}),
-    },
-  });
+async function adminRequest<T>(path: string, init?: RequestInit): Promise<T> {
+  let response: Response;
+  try {
+    response = await fetch(`/admin-api${path}`, {
+      ...init,
+      headers: {
+        "Content-Type": "application/json",
+        ...(init?.headers ?? {}),
+      },
+    });
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : "Unknown network error";
+    throw new ApiRequestError("Unable to reach admin service", 0, detail);
+  }
 
   if (!response.ok) {
     let message = "Admin request failed";
+    let detail: string | undefined;
     try {
       const data = (await response.json()) as { detail?: string };
       if (data.detail) {
+        detail = data.detail;
         message = data.detail;
       }
     } catch {}
-    throw new Error(message);
+    throw new ApiRequestError(message, response.status, detail);
   }
 
   if (response.status === 204) {
@@ -56,42 +75,40 @@ async function adminRequest<T>(path: string, token: string, init?: RequestInit):
   return (await response.json()) as T;
 }
 
-export async function getAdminProducts(token: string): Promise<Product[]> {
-  const data = await adminRequest<{ items: Product[] }>("/admin/products", token, {
+export async function getAdminProducts(): Promise<Product[]> {
+  const data = await adminRequest<{ items: Product[] }>("/products", {
     method: "GET",
   });
   return data.items;
 }
 
-export async function createAdminProduct(token: string, payload: ProductInput): Promise<Product> {
-  return adminRequest<Product>("/admin/products", token, {
+export async function createAdminProduct(payload: ProductInput): Promise<Product> {
+  return adminRequest<Product>("/products", {
     method: "POST",
     body: JSON.stringify(payload),
   });
 }
 
 export async function updateAdminProduct(
-  token: string,
   productId: number,
   payload: Partial<ProductInput>,
 ): Promise<Product> {
-  return adminRequest<Product>(`/admin/products/${productId}`, token, {
+  return adminRequest<Product>(`/products/${productId}`, {
     method: "PATCH",
     body: JSON.stringify(payload),
   });
 }
 
-export async function deleteAdminProduct(token: string, productId: number): Promise<void> {
-  await adminRequest<void>(`/admin/products/${productId}`, token, {
+export async function deleteAdminProduct(productId: number): Promise<void> {
+  await adminRequest<void>(`/products/${productId}`, {
     method: "DELETE",
   });
 }
 
 export async function importAdminProducts(
-  token: string,
   items: ProductInput[],
 ): Promise<{ imported_count: number; items: Product[] }> {
-  return adminRequest<{ imported_count: number; items: Product[] }>("/admin/products/import-json", token, {
+  return adminRequest<{ imported_count: number; items: Product[] }>("/products/import-json", {
     method: "POST",
     body: JSON.stringify({ items }),
   });

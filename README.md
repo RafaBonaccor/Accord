@@ -74,6 +74,7 @@ npm run dev
 
 - `DATABASE_URL`: URL Postgres/Supabase, ad esempio `postgresql+psycopg://...`
 - `STRIPE_SECRET_KEY`: chiave privata Stripe
+- `STRIPE_WEBHOOK_SECRET`: secret `whsec_...` per verificare i webhook Stripe
 - `STRIPE_PRICE_CURRENCY`: valuta del checkout
 - `FRONTEND_URL`: URL frontend per redirect checkout
 - `ADMIN_API_TOKEN`: token Bearer richiesto dalle API admin per creare, modificare, eliminare o importare prodotti
@@ -81,6 +82,11 @@ npm run dev
 ### Frontend
 
 - `NEXT_PUBLIC_API_URL`: URL del backend FastAPI
+- `API_URL_SERVER`: URL backend usato dal server Next.js
+- `ADMIN_API_TOKEN`: token server-side usato dal proxy interno `/admin-api`
+- `ADMIN_USERNAME`: username login admin
+- `ADMIN_PASSWORD`: password login admin
+- `ADMIN_SESSION_SECRET`: secret usato per firmare la sessione admin `httpOnly`
 
 ## Funzionalita incluse
 
@@ -92,17 +98,11 @@ npm run dev
 - Persistenza ordine relazionale con `orders` e `order_items` prima del redirect a Stripe
 - Campo email cliente nel carrello per precompilare il checkout
 - UI storefront responsive con hero, griglia prodotti e drawer carrello
-- Dashboard admin su `/admin` per gestione catalogo e import JSON prodotti
+- Dashboard admin protetta su `/admin` con login server-side e proxy admin interno
 
 ## API Admin
 
-Tutte le API admin richiedono l'header:
-
-```http
-Authorization: Bearer <ADMIN_API_TOKEN>
-```
-
-Endpoint disponibili:
+Endpoint backend disponibili:
 
 - `GET /api/admin/products`
 - `POST /api/admin/products`
@@ -110,7 +110,8 @@ Endpoint disponibili:
 - `DELETE /api/admin/products/{product_id}`
 - `POST /api/admin/products/import-json`
 
-La dashboard browser per queste API e disponibile su `http://localhost:3000/admin`.
+La dashboard browser autenticata e disponibile su `http://localhost:3000/admin`.
+Le chiamate dal browser passano attraverso il proxy interno `frontend/app/admin-api/*`, che usa `ADMIN_API_TOKEN` solo server-side.
 
 ## Tabelle Supabase
 

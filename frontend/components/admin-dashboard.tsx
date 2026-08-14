@@ -1,8 +1,10 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import {
+  ApiRequestError,
   createAdminProduct,
   deleteAdminProduct,
   getAdminProducts,
@@ -11,8 +13,6 @@ import {
 } from "../lib/api";
 import { Product, ProductInput } from "../lib/types";
 import styles from "./admin-dashboard.module.css";
-
-const ADMIN_TOKEN_STORAGE_KEY = "accordi-admin-token";
 
 const emptyProduct: ProductInput = {
   name: "",
@@ -26,7 +26,6 @@ const emptyProduct: ProductInput = {
 };
 
 export function AdminDashboard() {
-  const [token, setToken] = useState("");
   const [products, setProducts] = useState<Product[]>([]);
   const [form, setForm] = useState<ProductInput>(emptyProduct);
   const [jsonInput, setJsonInput] = useState("");
@@ -34,35 +33,65 @@ export function AdminDashboard() {
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [popupMessage, setPopupMessage] = useState<string | null>(null);
 
-  useEffect(() => {
-    const saved = window.localStorage.getItem(ADMIN_TOKEN_STORAGE_KEY);
-    if (saved) {
-      setToken(saved);
+  function explainAdminError(error: unknown): string {
+    if (error instanceof ApiRequestError) {
+      if (error.status === 401) {
+        return "Sessione admin non valida o scaduta. Effettua di nuovo il login.";
+      }
+      if (error.status === 409) {
+        return `Conflitto dati: ${error.detail ?? "esiste gia un prodotto con questo slug."}`;
+      }
+      if (error.status === 422) {
+        return "Dati non validi. Controlla nome, slug, descrizione, prezzo, immagine, categoria e materiale.";
+      }
+      if (error.status === 503) {
+        return `Servizio non configurato o temporaneamente non disponibile. Dettaglio: ${error.detail ?? "verifica backend, database o variabili ambiente."}`;
+      }
+      if (error.status >= 500) {
+        return `Errore server admin. Dettaglio: ${error.detail ?? "il backend non e riuscito a completare la richiesta."}`;
+      }
+      if (error.status === 0) {
+        return `Servizio admin non raggiungibile. Dettaglio tecnico: ${error.detail ?? "errore di rete interno."}`;
+      }
+      return error.detail ?? error.message;
     }
-  }, []);
 
-  async function loadProducts(nextToken = token) {
-    if (!nextToken) {
-      return;
+    if (error instanceof SyntaxError) {
+      return "JSON non valido. Correggi il formato prima di importare i prodotti.";
     }
+
+    if (error instanceof Error) {
+      return error.message;
+    }
+
+    return "Errore sconosciuto nella richiesta admin.";
+  }
+
+  function showAdminError(error: unknown) {
+    const message = explainAdminError(error);
+    setError(message);
+    setPopupMessage(message);
+  }
+
+  async function loadProducts() {
     setLoading(true);
     setError(null);
     try {
-      const items = await getAdminProducts(nextToken);
+      const items = await getAdminProducts();
       setProducts(items);
       setStatus(`Prodotti caricati: ${items.length}`);
     } catch (loadError) {
-      setError(loadError instanceof Error ? loadError.message : "Unable to load admin products");
+      showAdminError(loadError);
     } finally {
       setLoading(false);
     }
   }
 
-  function persistToken(nextToken: string) {
-    setToken(nextToken);
-    window.localStorage.setItem(ADMIN_TOKEN_STORAGE_KEY, nextToken);
-  }
+  useEffect(() => {
+    void loadProducts();
+  }, []);
 
   function resetForm() {
     setForm(emptyProduct);
@@ -84,69 +113,57 @@ export function AdminDashboard() {
   }
 
   async function handleSaveProduct() {
-    if (!token) {
-      setError("Inserisci prima il token admin");
-      return;
-    }
     setLoading(true);
     setError(null);
     setStatus(null);
     try {
       if (selectedProductId) {
-        await updateAdminProduct(token, selectedProductId, form);
+        await updateAdminProduct(selectedProductId, form);
         setStatus(`Prodotto #${selectedProductId} aggiornato`);
       } else {
-        const created = await createAdminProduct(token, form);
+        const created = await createAdminProduct(form);
         setStatus(`Prodotto creato: #${created.id}`);
       }
       resetForm();
-      await loadProducts(token);
+      await loadProducts();
     } catch (saveError) {
-      setError(saveError instanceof Error ? saveError.message : "Unable to save product");
+      showAdminError(saveError);
     } finally {
       setLoading(false);
     }
   }
 
   async function handleDeleteProduct(productId: number) {
-    if (!token) {
-      setError("Inserisci prima il token admin");
-      return;
-    }
     setLoading(true);
     setError(null);
     setStatus(null);
     try {
-      await deleteAdminProduct(token, productId);
+      await deleteAdminProduct(productId);
       setStatus(`Prodotto eliminato: #${productId}`);
       if (selectedProductId === productId) {
         resetForm();
       }
-      await loadProducts(token);
+      await loadProducts();
     } catch (deleteError) {
-      setError(deleteError instanceof Error ? deleteError.message : "Unable to delete product");
+      showAdminError(deleteError);
     } finally {
       setLoading(false);
     }
   }
 
   async function handleImportJson() {
-    if (!token) {
-      setError("Inserisci prima il token admin");
-      return;
-    }
     setLoading(true);
     setError(null);
     setStatus(null);
     try {
       const parsed = JSON.parse(jsonInput) as ProductInput[] | { items: ProductInput[] };
       const items = Array.isArray(parsed) ? parsed : parsed.items;
-      const response = await importAdminProducts(token, items);
+      const response = await importAdminProducts(items);
       setStatus(`Import completato: ${response.imported_count} prodotti`);
       setJsonInput("");
-      await loadProducts(token);
+      await loadProducts();
     } catch (importError) {
-      setError(importError instanceof Error ? importError.message : "Invalid JSON import");
+      showAdminError(importError);
     } finally {
       setLoading(false);
     }
@@ -157,25 +174,43 @@ export function AdminDashboard() {
 
   return (
     <main className={styles.page}>
+      {popupMessage ? (
+        <div className={styles.errorModalBackdrop} role="presentation" onClick={() => setPopupMessage(null)}>
+          <div
+            className={styles.errorModal}
+            role="alertdialog"
+            aria-labelledby="admin-error-title"
+            aria-describedby="admin-error-body"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <p className={styles.eyebrow}>Errore admin</p>
+            <h2 id="admin-error-title" className={styles.sectionTitle}>
+              Richiesta non completata
+            </h2>
+            <p id="admin-error-body" className={styles.errorModalCopy}>
+              {popupMessage}
+            </p>
+            <div className={styles.actions}>
+              <button type="button" className={styles.primaryButton} onClick={() => setPopupMessage(null)}>
+                Chiudi
+              </button>
+              <Link href="/admin/login" className={styles.secondaryButton}>
+                Vai al login
+              </Link>
+            </div>
+          </div>
+        </div>
+      ) : null}
       <div className={styles.shell}>
         <aside className={styles.panel}>
           <p className={styles.eyebrow}>Admin dashboard</p>
           <h1>Gestione catalogo</h1>
           <p>
-            Dashboard per caricare prodotti manualmente o via JSON. Le API admin accettano
-            richieste solo con token `Bearer`.
+            Dashboard riservata per caricare prodotti manualmente o via JSON. L&apos;accesso e le
+            chiamate admin sono protetti da sessione server-side.
           </p>
 
           <div className={styles.stack}>
-            <label className={styles.field}>
-              <span>Admin token</span>
-              <input
-                type="password"
-                value={token}
-                onChange={(event) => persistToken(event.target.value)}
-                placeholder="change-me-admin-token"
-              />
-            </label>
             <div className={styles.actions}>
               <button type="button" className={styles.primaryButton} onClick={() => loadProducts()} disabled={loading}>
                 Carica prodotti
@@ -183,6 +218,9 @@ export function AdminDashboard() {
               <button type="button" className={styles.secondaryButton} onClick={resetForm} disabled={loading}>
                 Nuovo prodotto
               </button>
+              <Link href="/admin/logout" className={styles.secondaryButton}>
+                Logout
+              </Link>
             </div>
             {status ? <p className={styles.statusOk}>{status}</p> : null}
             {error ? <p className={styles.statusError}>{error}</p> : null}
@@ -326,7 +364,7 @@ export function AdminDashboard() {
           <article className={styles.docsCard}>
             <p className={styles.eyebrow}>API admin</p>
             <h2>Endpoint da interrogare</h2>
-            <p>Header richiesto per tutte le chiamate admin: `Authorization: Bearer &lt;ADMIN_API_TOKEN&gt;`</p>
+            <p>Le chiamate vengono inoltrate server-side con sessione admin attiva e token non esposto nel browser.</p>
             <pre className={styles.jsonBlock}>{`GET    /api/admin/products
 POST   /api/admin/products
 PATCH  /api/admin/products/{product_id}

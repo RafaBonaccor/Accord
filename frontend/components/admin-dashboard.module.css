@@ -2,6 +2,30 @@
   padding: 28px 24px 48px;
 }
 
+.errorModalBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(17, 17, 17, 0.5);
+}
+
+.errorModal {
+  width: min(560px, 100%);
+  padding: 28px;
+  background: #ffffff;
+  border: 1px solid var(--line);
+  box-shadow: 0 24px 60px rgba(17, 17, 17, 0.18);
+}
+
+.errorModalCopy {
+  margin: 0 0 18px;
+  color: var(--text);
+  line-height: 1.7;
+}
+
 .shell {
   max-width: 1400px;
   margin: 0 auto;
