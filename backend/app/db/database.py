@@ -1,4 +1,6 @@
-from sqlalchemy import create_engine
+from datetime import datetime, timezone
+
+from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.orm import sessionmaker
 
 from app.core.config import settings
@@ -78,6 +80,35 @@ def seed_products() -> None:
         db.close()
 
 
+def ensure_schema_extensions() -> None:
+    inspector = inspect(engine)
+    if "orders" not in inspector.get_table_names():
+        return
+
+    existing_columns = {column["name"] for column in inspector.get_columns("orders")}
+    dialect = engine.dialect.name
+    timestamp_type = "TIMESTAMPTZ" if dialect == "postgresql" else "DATETIME"
+    additions = {
+        "stripe_payment_intent_id": "VARCHAR(255)",
+        "customer_name": "VARCHAR(255)",
+        "customer_phone": "VARCHAR(64)",
+        "shipping_name": "VARCHAR(255)",
+        "shipping_line1": "VARCHAR(255)",
+        "shipping_line2": "VARCHAR(255)",
+        "shipping_city": "VARCHAR(120)",
+        "shipping_state": "VARCHAR(120)",
+        "shipping_postal_code": "VARCHAR(40)",
+        "shipping_country": "VARCHAR(8)",
+        "paid_at": timestamp_type,
+    }
+
+    with engine.begin() as connection:
+        for column_name, column_type in additions.items():
+            if column_name in existing_columns:
+                continue
+            connection.execute(text(f"ALTER TABLE orders ADD COLUMN {column_name} {column_type}"))
+
+
 def create_order_record(*, email: str, currency: str, items: list[dict], total_amount_cents: int) -> Order:
     db = SessionLocal()
     try:
@@ -116,6 +147,72 @@ def attach_stripe_session(*, order_id: int, stripe_session_id: str) -> None:
         if not order:
             return
         order.stripe_session_id = stripe_session_id
+        db.commit()
+    finally:
+        db.close()
+
+
+def mark_order_paid_from_checkout(
+    *,
+    order_id: int,
+    stripe_session_id: str | None,
+    stripe_payment_intent_id: str | None,
+    customer_email: str | None,
+    customer_name: str | None,
+    customer_phone: str | None,
+    shipping_name: str | None,
+    shipping_line1: str | None,
+    shipping_line2: str | None,
+    shipping_city: str | None,
+    shipping_state: str | None,
+    shipping_postal_code: str | None,
+    shipping_country: str | None,
+) -> None:
+    db = SessionLocal()
+    try:
+        order = db.query(Order).filter(Order.id == order_id).first()
+        if not order:
+            return
+        order.status = "paid"
+        order.stripe_session_id = stripe_session_id or order.stripe_session_id
+        order.stripe_payment_intent_id = stripe_payment_intent_id
+        order.email = customer_email or order.email
+        order.customer_name = customer_name
+        order.customer_phone = customer_phone
+        order.shipping_name = shipping_name
+        order.shipping_line1 = shipping_line1
+        order.shipping_line2 = shipping_line2
+        order.shipping_city = shipping_city
+        order.shipping_state = shipping_state
+        order.shipping_postal_code = shipping_postal_code
+        order.shipping_country = shipping_country
+        order.paid_at = datetime.now(timezone.utc)
+        db.commit()
+    finally:
+        db.close()
+
+
+def mark_order_payment_failed(*, order_id: int, stripe_session_id: str | None) -> None:
+    db = SessionLocal()
+    try:
+        order = db.query(Order).filter(Order.id == order_id).first()
+        if not order:
+            return
+        order.status = "payment_failed"
+        order.stripe_session_id = stripe_session_id or order.stripe_session_id
+        db.commit()
+    finally:
+        db.close()
+
+
+def mark_order_expired(*, order_id: int, stripe_session_id: str | None) -> None:
+    db = SessionLocal()
+    try:
+        order = db.query(Order).filter(Order.id == order_id).first()
+        if not order:
+            return
+        order.status = "expired"
+        order.stripe_session_id = stripe_session_id or order.stripe_session_id
         db.commit()
     finally:
         db.close()

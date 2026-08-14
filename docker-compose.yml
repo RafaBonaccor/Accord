@@ -2,13 +2,16 @@ services:
   backend:
     build:
       context: ./backend
+    env_file:
+      - ./backend/.env
+    dns:
+      - 1.1.1.1
+      - 8.8.8.8
     ports:
       - "8000:8000"
     environment:
-      DATABASE_URL: sqlite:///./accordi_jewelry.db
-      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-sk_test_your_key}
-      STRIPE_PRICE_CURRENCY: eur
-      FRONTEND_URL: http://localhost:3000
+      STRIPE_PRICE_CURRENCY: ${STRIPE_PRICE_CURRENCY:-eur}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
 
   frontend:
     build:
@@ -16,7 +19,8 @@ services:
     ports:
       - "3000:3000"
     environment:
-      NEXT_PUBLIC_API_URL: http://localhost:8000
+      NEXT_PUBLIC_API_URL: /api
       API_URL_SERVER: http://backend:8000
+      API_PROXY_TARGET: http://backend:8000
     depends_on:
       - backend

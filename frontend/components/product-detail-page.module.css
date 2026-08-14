@@ -1,0 +1,275 @@
+.page {
+  display: grid;
+  gap: 3rem;
+  padding: 2.5rem clamp(1.25rem, 3vw, 3rem) 4rem;
+}
+
+.breadcrumbs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  color: rgba(53, 44, 38, 0.72);
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.breadcrumbs a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.breadcrumbs a:hover {
+  color: #8c5f41;
+}
+
+.hero {
+  display: grid;
+  gap: 2rem;
+  grid-template-columns: minmax(0, 1.1fr) minmax(320px, 0.9fr);
+  align-items: start;
+}
+
+.imagePanel {
+  position: relative;
+  min-height: 620px;
+  border-radius: 2rem;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at top, rgba(245, 220, 198, 0.85), transparent 45%),
+    linear-gradient(160deg, #f6ede4 0%, #f3e6d7 52%, #ecddcd 100%);
+}
+
+.image {
+  object-fit: cover;
+}
+
+.copy {
+  display: grid;
+  gap: 1.25rem;
+  padding: 1.25rem 0;
+}
+
+.eyebrow {
+  margin: 0;
+  color: #8c5f41;
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.title {
+  margin: 0;
+  color: #2f241f;
+  font-size: clamp(2.4rem, 5vw, 4.25rem);
+  line-height: 0.95;
+}
+
+.price {
+  margin: 0;
+  color: #2f241f;
+  font-size: 1.75rem;
+  font-weight: 700;
+}
+
+.description {
+  margin: 0;
+  color: rgba(53, 44, 38, 0.8);
+  font-size: 1rem;
+  line-height: 1.7;
+}
+
+.purchaseBlock {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.purchaseActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.85rem;
+}
+
+.buyButton,
+.checkoutButton {
+  min-height: 52px;
+  padding: 0 1.35rem;
+  border-radius: 999px;
+  border: 1px solid #2f241f;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.buyButton {
+  background: #2f241f;
+  color: #fff8f1;
+}
+
+.checkoutButton {
+  background: #fff8f1;
+  color: #2f241f;
+}
+
+.purchaseNote {
+  margin: 0;
+  color: #8c5f41;
+  font-size: 0.92rem;
+  font-weight: 600;
+}
+
+.metaGrid {
+  display: grid;
+  gap: 0.9rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.metaCard {
+  padding: 1rem 1.1rem;
+  border: 1px solid rgba(140, 95, 65, 0.15);
+  border-radius: 1.25rem;
+  background: rgba(255, 255, 255, 0.76);
+}
+
+.metaCard span {
+  display: block;
+  margin-bottom: 0.4rem;
+  color: rgba(53, 44, 38, 0.58);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.9rem;
+  margin-top: 0.4rem;
+}
+
+.primaryAction,
+.secondaryAction {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  padding: 0.9rem 1.3rem;
+  border-radius: 999px;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.primaryAction {
+  background: #2f241f;
+  color: #fff8f1;
+}
+
+.secondaryAction {
+  border: 1px solid rgba(47, 36, 31, 0.18);
+  color: #2f241f;
+}
+
+.section {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.sectionHeader {
+  display: grid;
+  gap: 0.4rem;
+  max-width: 52rem;
+}
+
+.sectionHeader h2,
+.sectionHeader p {
+  margin: 0;
+}
+
+.sectionHeader h2 {
+  color: #2f241f;
+  font-size: clamp(1.7rem, 3vw, 2.6rem);
+}
+
+.sectionHeader p {
+  color: rgba(53, 44, 38, 0.76);
+  line-height: 1.7;
+}
+
+.relatedGrid {
+  display: grid;
+  gap: 1.25rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.relatedCard {
+  display: grid;
+  gap: 0.9rem;
+  text-decoration: none;
+  color: inherit;
+}
+
+.relatedImageWrap {
+  position: relative;
+  min-height: 340px;
+  border-radius: 1.5rem;
+  overflow: hidden;
+  background: linear-gradient(145deg, #f7ecde, #ebd8c2);
+}
+
+.relatedBody {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.relatedMeta,
+.relatedPrice {
+  margin: 0;
+}
+
+.relatedMeta {
+  color: rgba(53, 44, 38, 0.62);
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.relatedBody h3 {
+  margin: 0;
+  color: #2f241f;
+  font-size: 1.15rem;
+}
+
+.relatedPrice {
+  color: #8c5f41;
+  font-weight: 700;
+}
+
+@media (max-width: 980px) {
+  .hero {
+    grid-template-columns: 1fr;
+  }
+
+  .imagePanel {
+    min-height: 480px;
+  }
+
+  .relatedGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .page {
+    padding-inline: 1rem;
+  }
+
+  .metaGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .imagePanel {
+    min-height: 360px;
+  }
+}

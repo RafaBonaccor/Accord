@@ -22,6 +22,17 @@ create table if not exists public.orders (
     total_amount_cents integer not null,
     currency varchar(8) not null,
     stripe_session_id varchar(255),
+    stripe_payment_intent_id varchar(255),
+    customer_name varchar(255),
+    customer_phone varchar(64),
+    shipping_name varchar(255),
+    shipping_line1 varchar(255),
+    shipping_line2 varchar(255),
+    shipping_city varchar(120),
+    shipping_state varchar(120),
+    shipping_postal_code varchar(40),
+    shipping_country varchar(8),
+    paid_at timestamptz,
     created_at timestamptz not null default timezone('utc', now()),
     updated_at timestamptz not null default timezone('utc', now())
 );

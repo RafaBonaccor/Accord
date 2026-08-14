@@ -15,11 +15,17 @@ class StripeCheckoutRequestError(Exception):
     pass
 
 
+def shipping_countries() -> list[str]:
+    countries = [country.strip().upper() for country in settings.stripe_shipping_countries.split(",")]
+    return [country for country in countries if country]
+
+
 def create_checkout_session(
     items: list[CheckoutItem],
     success_url: str,
     cancel_url: str,
     currency: str,
+    order_id: int,
     customer_email: str | None = None,
 ) -> tuple[str, str]:
     if not settings.stripe_secret_key or settings.stripe_secret_key == "sk_test_your_key":
@@ -31,6 +37,10 @@ def create_checkout_session(
             success_url=success_url,
             cancel_url=cancel_url,
             customer_email=customer_email,
+            billing_address_collection="required",
+            phone_number_collection={"enabled": True},
+            shipping_address_collection={"allowed_countries": shipping_countries()},
+            metadata={"order_id": str(order_id)},
             line_items=[
                 {
                     "quantity": item.quantity,

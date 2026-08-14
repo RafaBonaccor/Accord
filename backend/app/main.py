@@ -5,12 +5,13 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import settings
 from app.api.routes import router
-from app.db.database import Base, engine, seed_products
+from app.db.database import Base, engine, ensure_schema_extensions, seed_products
 
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     Base.metadata.create_all(bind=engine)
+    ensure_schema_extensions()
     seed_products()
     yield
 
@@ -29,7 +30,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(router, prefix="/api")
+app.include_router(router)
 
 
 @app.get("/health")

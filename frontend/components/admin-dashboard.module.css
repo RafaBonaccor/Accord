@@ -1,0 +1,222 @@
+.page {
+  padding: 28px 24px 48px;
+}
+
+.shell {
+  max-width: 1400px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 380px minmax(0, 1fr);
+  gap: 24px;
+}
+
+.panel,
+.tableWrap,
+.docsCard {
+  background: #ffffff;
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow);
+}
+
+.panel {
+  padding: 24px;
+  align-self: start;
+  position: sticky;
+  top: 24px;
+}
+
+.eyebrow {
+  margin: 0 0 12px;
+  color: var(--muted);
+  font-size: 0.76rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.panel h1,
+.sectionTitle,
+.docsCard h2 {
+  margin: 0 0 14px;
+  font-family: Georgia, "Times New Roman", serif;
+  font-weight: 400;
+  letter-spacing: -0.03em;
+}
+
+.panel h1 {
+  font-size: 2.2rem;
+}
+
+.panel p,
+.helper,
+.docsCard p,
+.table td,
+.table th {
+  color: var(--muted);
+  line-height: 1.65;
+}
+
+.stack {
+  display: grid;
+  gap: 14px;
+}
+
+.field {
+  display: grid;
+  gap: 8px;
+}
+
+.field span {
+  font-size: 0.82rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.field input,
+.field textarea,
+.field select {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid #d9d1cb;
+  background: #ffffff;
+  font: inherit;
+}
+
+.field textarea {
+  min-height: 110px;
+  resize: vertical;
+}
+
+.checkboxRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.actions,
+.inlineActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.primaryButton,
+.secondaryButton,
+.dangerButton {
+  min-height: 44px;
+  padding: 0 18px;
+  border: 1px solid var(--accent);
+  background: var(--accent);
+  color: #ffffff;
+  font: inherit;
+  font-size: 0.82rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.secondaryButton {
+  background: #ffffff;
+  color: var(--text);
+  border-color: var(--line);
+}
+
+.dangerButton {
+  background: #8f2f1f;
+  border-color: #8f2f1f;
+}
+
+.primaryButton:disabled,
+.secondaryButton:disabled,
+.dangerButton:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.content {
+  display: grid;
+  gap: 24px;
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.statsCard {
+  padding: 20px;
+  background: #ffffff;
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow);
+}
+
+.statsCard strong {
+  display: block;
+  margin-top: 10px;
+  font-size: 1.8rem;
+  font-family: Georgia, "Times New Roman", serif;
+  font-weight: 400;
+  color: var(--text);
+}
+
+.tableWrap,
+.docsCard {
+  padding: 24px;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table th,
+.table td {
+  padding: 14px 10px;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+  vertical-align: top;
+  font-size: 0.94rem;
+}
+
+.table th {
+  color: var(--text);
+  font-size: 0.8rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.statusOk,
+.statusError {
+  margin: 0;
+  font-size: 0.92rem;
+}
+
+.statusOk {
+  color: #1d6b39;
+}
+
+.statusError {
+  color: #8f2f1f;
+}
+
+.jsonBlock {
+  margin: 0;
+  padding: 14px;
+  background: #f7f3ef;
+  overflow: auto;
+  font-size: 0.88rem;
+}
+
+@media (max-width: 1080px) {
+  .shell {
+    grid-template-columns: 1fr;
+  }
+
+  .panel {
+    position: static;
+  }
+
+  .stats {
+    grid-template-columns: 1fr;
+  }
+}

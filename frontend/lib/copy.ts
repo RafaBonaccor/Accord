@@ -4,28 +4,39 @@ type NavCopy = {
   announcement: string;
   navLeft: string[];
   navRightCollection: string;
-  navRightStore: string;
   navRightPrivacy: string;
+  navCart: string;
+  footerCategories: {
+    rings: string;
+    bracelets: string;
+    charms: string;
+    earrings: string;
+    necklaces: string;
+    collection: string;
+    brand: string;
+    seo: string;
+    bestsellers: string;
+    giftguide: string;
+    stores: string;
+    journal: string;
+  };
   footerIntroTitle: string;
   footerIntroBody: string;
   footerShopLabel: string;
   footerInfoLabel: string;
   footerOrderStatus: string;
   footerSeoTagline: string;
-  languageSwitch: string;
 };
 
 type StorefrontCopy = {
-  eyebrow: string;
-  heroTitle: string;
-  heroLead: string;
-  primaryAction: string;
-  secondaryAction: string;
-  languageAction: string;
-  heroCardLabel: string;
-  heroCardTitle: string;
-  heroCardBody: string;
+  serviceHighlights: string[];
   categoryPills: string[];
+  arrivalsEyebrow: string;
+  arrivalsTitle: string;
+  arrivalsBody: string;
+  featuredEyebrow: string;
+  featuredTitle: string;
+  featuredBody: string;
   addToCart: string;
   shopTitle: string;
   shopBody: string;
@@ -37,6 +48,13 @@ type StorefrontCopy = {
   cartTitle: string;
   cartItems: (count: number) => string;
   cartEmpty: string;
+  cartSummaryTitle: string;
+  cartSummaryBody: string;
+  cartRemove: string;
+  cartSubtotal: string;
+  cartTotalItems: (count: number) => string;
+  cartContinue: string;
+  cartClear: string;
   orderEmail: string;
   orderEmailPlaceholder: string;
   totalLabel: string;
@@ -62,75 +80,109 @@ type PrivacyCopy = {
 
 export const navCopy: Record<Locale, NavCopy> = {
   it: {
-    announcement: "Gioielli italiani online · Spedizione gratuita sopra € 120 · Gift packaging incluso",
+    announcement: "Spedizione gratuita sopra € 120 · Gift packaging incluso · Resi rapidi",
     navLeft: ["Nuovi arrivi", "Charm", "Bracciali", "Anelli"],
     navRightCollection: "Collezione",
-    navRightStore: "Store English",
     navRightPrivacy: "Privacy",
-    footerIntroTitle: "Gioielleria online italiana dal carattere contemporaneo.",
+    navCart: "Bag",
+    footerCategories: {
+      rings: "Anelli",
+      bracelets: "Bracciali",
+      charms: "Charm",
+      earrings: "Orecchini",
+      necklaces: "Collane",
+      collection: "Collezione",
+      brand: "Brand",
+      seo: "Italian Jewelry",
+      bestsellers: "Best seller",
+      giftguide: "Gift guide",
+      stores: "Store locator",
+      journal: "Journal",
+    },
+    footerIntroTitle: "Gioielli da indossare ogni giorno, da regalare, da scegliere con immediatezza.",
     footerIntroBody:
-      "Base e-commerce per gioielli con catalogo, carrello e checkout pensata per un brand premium nel mercato italiano e per la crescita SEO internazionale su keyword come Italian jewelry.",
+      "Scopri charms, anelli, bracciali, orecchini e collane in una boutique online essenziale e bilingue.",
     footerShopLabel: "Shop",
     footerInfoLabel: "Informazioni",
     footerOrderStatus: "Esito ordine",
-    footerSeoTagline: "Made for Italian jewelry SEO",
-    languageSwitch: "English",
+    footerSeoTagline: "Jewelry boutique IT / EN",
   },
   en: {
-    announcement: "Italian jewelry online · Free shipping over €120 · Gift packaging included",
+    announcement: "Free shipping over €120 · Gift packaging included · Fast returns",
     navLeft: ["New arrivals", "Charms", "Bracelets", "Rings"],
     navRightCollection: "Collection",
-    navRightStore: "Store in Italian",
     navRightPrivacy: "Privacy",
-    footerIntroTitle: "Italian jewelry e-commerce with a contemporary premium direction.",
+    navCart: "Bag",
+    footerCategories: {
+      rings: "Rings",
+      bracelets: "Bracelets",
+      charms: "Charms",
+      earrings: "Earrings",
+      necklaces: "Necklaces",
+      collection: "Collection",
+      brand: "Brand",
+      seo: "Italian Jewelry",
+      bestsellers: "Best sellers",
+      giftguide: "Gift guide",
+      stores: "Store locator",
+      journal: "Journal",
+    },
+    footerIntroTitle: "Jewelry to wear every day, gift beautifully and choose with ease.",
     footerIntroBody:
-      "Jewelry storefront with catalog, cart and checkout designed for a premium brand serving both Italian and English-speaking customers.",
+      "Explore charms, rings, bracelets, earrings and necklaces in a refined bilingual online boutique.",
     footerShopLabel: "Shop",
     footerInfoLabel: "Information",
     footerOrderStatus: "Order status",
-    footerSeoTagline: "Built for bilingual jewelry shopping",
-    languageSwitch: "Italiano",
+    footerSeoTagline: "Jewelry boutique IT / EN",
   },
 };
 
 export const storefrontCopy: Record<Locale, StorefrontCopy> = {
   it: {
-    eyebrow: "Italian Jewelry · Gioielli Italiani",
-    heroTitle: "Italian jewelry online tra charm, anelli e bracciali da regalare.",
-    heroLead:
-      "Accordi Jewelry propone una selezione di Italian jewelry e gioielli donna online con stile premium, design contemporaneo e una base e-commerce pronta per il mercato italiano e per ricerche internazionali in inglese.",
-    primaryAction: "Acquista ora",
-    secondaryAction: "Scopri la collezione",
-    languageAction: "Switch to English",
-    heroCardLabel: "Best gift edit",
-    heroCardTitle: "Shine in layers",
-    heroCardBody: "Mix di metalli caldi, charm iconici e silhouette pulite.",
-    categoryPills: ["Charm da collezione", "Bracciali iconici", "Anelli luminosi", "Gift sets"],
+    serviceHighlights: [
+      "Spedizione gratuita sopra € 120",
+      "Confezione regalo inclusa",
+      "Resi rapidi entro 14 giorni",
+    ],
+    categoryPills: ["Novita", "Charm", "Bracciali", "Anelli", "Orecchini", "Collane"],
+    arrivalsEyebrow: "Novita",
+    arrivalsTitle: "Ultimi arrivi",
+    arrivalsBody: "Scopri le novita del momento, selezionate per essere indossate o regalate.",
+    featuredEyebrow: "Collezione",
+    featuredTitle: "Selezione in evidenza",
+    featuredBody: "Una selezione curata di pezzi iconici da abbinare con naturalezza.",
     addToCart: "Aggiungi",
-    shopTitle: "Shop all jewelry",
-    shopBody: "Catalogo FastAPI + Supabase, pronto per un storefront bilingue.",
-    seoMeta: "Gioielleria online italiana · Italian jewelry",
-    seoTitle: "Acquista gioielli donna online con un’identita italiana chiara e rilevanza internazionale.",
+    shopTitle: "Tutti i gioielli",
+    shopBody: "Esplora l'intera selezione tra charms, bracciali, anelli, orecchini e collane.",
+    seoMeta: "Accordi Jewelry",
+    seoTitle: "Il mondo Accordi",
     seoBody:
-      "Questa homepage e pensata per intercettare ricerche come gioielli italiani, gioielli donna online, italian jewelry, italian jewelry online, charm eleganti, anelli da regalo e bracciali premium. Il tono visivo e commerciale aiuta il posizionamento del brand su un target femminile interessato a gifting, collezioni stagionali e acquisto diretto sia in italiano sia in inglese.",
+      "Linee luminose, dettagli da regalare e una selezione pensata per accompagnare ogni giorno.",
     seoPoints: [
       {
-        title: "Keyword focus",
-        body: "gioielli italiani, italian jewelry, italian jewelry online, anelli donna, charms e bracciali.",
+        title: "Da regalare",
+        body: "Pezzi scelti per occasioni speciali, piccoli pensieri e momenti da ricordare.",
       },
       {
-        title: "Intento di ricerca",
-        body: "Acquisto diretto, gift ideas, premium collections e modern italian jewelry.",
+        title: "Da abbinare",
+        body: "Charms, bracciali e anelli pensati per creare combinazioni personali.",
       },
       {
-        title: "Contenuto bilingue SEO",
-        body: "Copy e metadata pensati per keyword italiane e inglesi con focus su Italian jewelry.",
+        title: "Da vivere ogni giorno",
+        body: "Materiali luminosi e silhouette pulite per uno stile facile e contemporaneo.",
       },
     ],
-    seoLinkLabel: "Vai alla landing English SEO",
+    seoLinkLabel: "Scopri Italian Jewelry",
     cartTitle: "Shopping bag",
     cartItems: (count) => `${count} articoli`,
     cartEmpty: "Aggiungi i tuoi pezzi preferiti per iniziare il checkout.",
+    cartSummaryTitle: "Selezione corrente",
+    cartSummaryBody: "Rivedi i tuoi pezzi, aggiorna le quantita e procedi al checkout quando vuoi.",
+    cartRemove: "Rimuovi",
+    cartSubtotal: "Subtotale",
+    cartTotalItems: (count) => `${count} pezzi nel bag`,
+    cartContinue: "Continua lo shopping",
+    cartClear: "Svuota bag",
     orderEmail: "Email per l'ordine",
     orderEmailPlaceholder: "cliente@accordi.com",
     totalLabel: "Totale",
@@ -139,42 +191,52 @@ export const storefrontCopy: Record<Locale, StorefrontCopy> = {
     checkoutUnavailable: "Checkout non disponibile",
   },
   en: {
-    eyebrow: "Italian Jewelry · Women's Jewelry",
-    heroTitle: "Italian jewelry online with charms, rings and bracelets made for gifting.",
-    heroLead:
-      "Accordi Jewelry offers a premium edit of Italian jewelry for women with contemporary design, polished styling and a shopping experience ready for both Italian and English-speaking customers.",
-    primaryAction: "Shop now",
-    secondaryAction: "Discover the collection",
-    languageAction: "Passa all'italiano",
-    heroCardLabel: "Gift spotlight",
-    heroCardTitle: "Layered glow",
-    heroCardBody: "Warm metals, iconic charms and clean silhouettes for everyday elegance.",
-    categoryPills: ["Collectible charms", "Signature bracelets", "Luminous rings", "Gift sets"],
+    serviceHighlights: [
+      "Free shipping over €120",
+      "Gift packaging included",
+      "Fast 14-day returns",
+    ],
+    categoryPills: ["New in", "Charms", "Bracelets", "Rings", "Earrings", "Necklaces"],
+    arrivalsEyebrow: "New in",
+    arrivalsTitle: "Latest arrivals",
+    arrivalsBody:
+      "Discover the newest pieces of the moment, selected to be worn, layered and gifted.",
+    featuredEyebrow: "Collection",
+    featuredTitle: "Featured selection",
+    featuredBody:
+      "A curated edit of signature pieces designed to style naturally together.",
     addToCart: "Add",
-    shopTitle: "Shop all jewelry",
-    shopBody: "FastAPI + Supabase catalog, ready for a bilingual storefront.",
-    seoMeta: "Italian jewelry online · Jewelry gifts",
-    seoTitle: "Shop women’s jewelry with an Italian identity and a clear English-language buying experience.",
+    shopTitle: "All jewelry",
+    shopBody: "Explore the full edit across charms, bracelets, rings, earrings and necklaces.",
+    seoMeta: "Accordi Jewelry",
+    seoTitle: "The Accordi world",
     seoBody:
-      "This storefront is designed for searches such as Italian jewelry, jewelry gifts for women, charm bracelets, stackable rings and elevated everyday accessories. The copy, navigation and checkout flow now support a genuine bilingual shopping experience rather than a single translated landing page.",
+      "Luminous details, gift-ready pieces and a refined selection designed for everyday elegance.",
     seoPoints: [
       {
-        title: "Keyword focus",
-        body: "Italian jewelry, jewelry gifts for women, charm bracelets, rings, premium bracelets.",
+        title: "Giftable pieces",
+        body: "Chosen for special occasions, meaningful gestures and easy gifting.",
       },
       {
-        title: "Search intent",
-        body: "Direct purchase, gifting, layering and modern Italian design.",
+        title: "Made to layer",
+        body: "Charms, bracelets and rings designed to create personal combinations.",
       },
       {
-        title: "Bilingual storefront",
-        body: "Navigation, cart and support pages are available in both Italian and English.",
+        title: "Everyday elegance",
+        body: "Clean silhouettes and luminous finishes for a modern jewelry wardrobe.",
       },
     ],
-    seoLinkLabel: "Visit the English SEO landing",
+    seoLinkLabel: "Discover Italian Jewelry",
     cartTitle: "Shopping bag",
     cartItems: (count) => `${count} items`,
     cartEmpty: "Add your favorite pieces to start checkout.",
+    cartSummaryTitle: "Current selection",
+    cartSummaryBody: "Review your pieces, adjust quantities and move to checkout whenever you are ready.",
+    cartRemove: "Remove",
+    cartSubtotal: "Subtotal",
+    cartTotalItems: (count) => `${count} pieces in bag`,
+    cartContinue: "Continue shopping",
+    cartClear: "Clear bag",
     orderEmail: "Order email",
     orderEmailPlaceholder: "client@accordi.com",
     totalLabel: "Total",
@@ -272,7 +334,7 @@ export const privacyCopy: Record<Locale, PrivacyCopy> = {
       },
       {
         title: "Updates",
-        body: "This notice may be updated to reflect operational, regulatory or technical changes to the e-commerce project.",
+        body: "This notice may be updated to reflect operational, regulatory or technical changes to the website and its services.",
       },
     ],
   },

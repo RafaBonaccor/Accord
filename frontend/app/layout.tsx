@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
+import { DocumentLocale } from "../components/document-locale";
 import { SiteChrome } from "../components/site-chrome";
+import { SITE_URL } from "../lib/site";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  metadataBase: new URL("http://localhost:3000"),
+  metadataBase: new URL(SITE_URL),
   title: {
     default: "Accordi Jewelry | Italian Jewelry & Gioielli Italiani",
     template: "%s | Accordi Jewelry",
@@ -34,10 +36,10 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Accordi Jewelry | Italian Jewelry & Gioielli Italiani",
     description:
-      "Scopri gioielli italiani donna e Italian jewelry con charm, bracciali e anelli eleganti in uno storefront premium pensato per il mercato italiano e internazionale.",
+      "Scopri gioielli italiani da donna con charm, bracciali e anelli eleganti dal gusto contemporaneo.",
     type: "website",
     locale: "it_IT",
-    url: "http://localhost:3000",
+    url: SITE_URL,
     siteName: "Accordi Jewelry",
   },
   robots: {
@@ -48,8 +50,9 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="it">
+    <html suppressHydrationWarning>
       <body>
+        <DocumentLocale />
         <SiteChrome>{children}</SiteChrome>
       </body>
     </html>

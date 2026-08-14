@@ -17,6 +17,17 @@ class Order(Base):
     total_amount_cents: Mapped[int] = mapped_column(Integer, nullable=False)
     currency: Mapped[str] = mapped_column(String(8), nullable=False)
     stripe_session_id: Mapped[str] = mapped_column(String(255), nullable=True)
+    stripe_payment_intent_id: Mapped[str] = mapped_column(String(255), nullable=True)
+    customer_name: Mapped[str] = mapped_column(String(255), nullable=True)
+    customer_phone: Mapped[str] = mapped_column(String(64), nullable=True)
+    shipping_name: Mapped[str] = mapped_column(String(255), nullable=True)
+    shipping_line1: Mapped[str] = mapped_column(String(255), nullable=True)
+    shipping_line2: Mapped[str] = mapped_column(String(255), nullable=True)
+    shipping_city: Mapped[str] = mapped_column(String(120), nullable=True)
+    shipping_state: Mapped[str] = mapped_column(String(120), nullable=True)
+    shipping_postal_code: Mapped[str] = mapped_column(String(40), nullable=True)
+    shipping_country: Mapped[str] = mapped_column(String(8), nullable=True)
+    paid_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
