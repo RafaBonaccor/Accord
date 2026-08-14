@@ -9,7 +9,7 @@ const BROWSER_API_URL =
   process.env.NEXT_PUBLIC_API_URL ?? process.env.NEXT_PUBLIC_BACKEND_URL ?? "/api";
 
 export async function getProducts(): Promise<Product[]> {
-  const response = await fetch(`${SERVER_API_URL}/products`, { cache: "no-store" });
+  const response = await fetch(`${SERVER_API_URL}/api/products`, { cache: "no-store" });
   if (!response.ok) {
     throw new Error("Unable to load products");
   }
@@ -18,7 +18,7 @@ export async function getProducts(): Promise<Product[]> {
 }
 
 export async function getProductBySlug(slug: string): Promise<Product | null> {
-  const response = await fetch(`${SERVER_API_URL}/products/slug/${slug}`, { cache: "no-store" });
+  const response = await fetch(`${SERVER_API_URL}/api/products/slug/${slug}`, { cache: "no-store" });
   if (response.status === 404) {
     return null;
   }
