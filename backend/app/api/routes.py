@@ -12,7 +12,14 @@ from app.db.database import (
     mark_order_paid_from_checkout,
     mark_order_payment_failed,
 )
+from app.models.collection import Collection
 from app.models.product import Product
+from app.schemas.collection import (
+    CollectionCreate,
+    CollectionListResponse,
+    CollectionResponse,
+    CollectionUpdate,
+)
 from app.schemas.checkout import CheckoutItem, CheckoutRequest, CheckoutResponse
 from app.schemas.product import (
     ProductCreate,
@@ -48,10 +55,29 @@ def get_product_or_404(db: Session, product_id: int) -> Product:
     return product
 
 
+def get_collection_or_404(db: Session, collection_id: int) -> Collection:
+    collection = db.query(Collection).filter(Collection.id == collection_id).first()
+    if not collection:
+        raise HTTPException(status_code=404, detail="Collection not found")
+    return collection
+
+
+def ensure_valid_collection(db: Session, collection_id: int | None) -> None:
+    if collection_id is None:
+        return
+    get_collection_or_404(db, collection_id)
+
+
 def ensure_unique_slug(db: Session, slug: str, current_product_id: int | None = None) -> None:
     existing = db.query(Product).filter(Product.slug == slug).first()
     if existing and existing.id != current_product_id:
         raise HTTPException(status_code=409, detail=f"Slug '{slug}' already exists")
+
+
+def ensure_unique_collection_slug(db: Session, slug: str, current_collection_id: int | None = None) -> None:
+    existing = db.query(Collection).filter(Collection.slug == slug).first()
+    if existing and existing.id != current_collection_id:
+        raise HTTPException(status_code=409, detail=f"Collection slug '{slug}' already exists")
 
 
 def parse_order_id_from_session(session: dict) -> int | None:
@@ -130,6 +156,61 @@ def admin_list_products(db: Session = Depends(get_db)) -> ProductListResponse:
     return ProductListResponse(items=products)
 
 
+@router.get("/admin/collections", response_model=CollectionListResponse, dependencies=[Depends(require_admin)])
+def admin_list_collections(db: Session = Depends(get_db)) -> CollectionListResponse:
+    items = db.query(Collection).order_by(Collection.name.asc(), Collection.id.asc()).all()
+    return CollectionListResponse(items=items)
+
+
+@router.post(
+    "/admin/collections",
+    response_model=CollectionResponse,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(require_admin)],
+)
+def admin_create_collection(payload: CollectionCreate, db: Session = Depends(get_db)) -> CollectionResponse:
+    ensure_unique_collection_slug(db, payload.slug)
+    item = Collection(**payload.model_dump())
+    db.add(item)
+    db.commit()
+    db.refresh(item)
+    return item
+
+
+@router.patch(
+    "/admin/collections/{collection_id}",
+    response_model=CollectionResponse,
+    dependencies=[Depends(require_admin)],
+)
+def admin_update_collection(
+    collection_id: int,
+    payload: CollectionUpdate,
+    db: Session = Depends(get_db),
+) -> CollectionResponse:
+    item = get_collection_or_404(db, collection_id)
+    updates = payload.model_dump(exclude_unset=True)
+    if "slug" in updates:
+        ensure_unique_collection_slug(db, updates["slug"], current_collection_id=item.id)
+    for field, value in updates.items():
+        setattr(item, field, value)
+    db.commit()
+    db.refresh(item)
+    return item
+
+
+@router.delete(
+    "/admin/collections/{collection_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    dependencies=[Depends(require_admin)],
+)
+def admin_delete_collection(collection_id: int, db: Session = Depends(get_db)) -> Response:
+    item = get_collection_or_404(db, collection_id)
+    db.query(Product).filter(Product.collection_id == item.id).update({"collection_id": None})
+    db.delete(item)
+    db.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
 @router.post(
     "/admin/products",
     response_model=ProductResponse,
@@ -138,6 +219,7 @@ def admin_list_products(db: Session = Depends(get_db)) -> ProductListResponse:
 )
 def admin_create_product(payload: ProductCreate, db: Session = Depends(get_db)) -> ProductResponse:
     ensure_unique_slug(db, payload.slug)
+    ensure_valid_collection(db, payload.collection_id)
     product = Product(**payload.model_dump())
     db.add(product)
     db.commit()
@@ -151,6 +233,8 @@ def admin_update_product(product_id: int, payload: ProductUpdate, db: Session = 
     updates = payload.model_dump(exclude_unset=True)
     if "slug" in updates:
         ensure_unique_slug(db, updates["slug"], current_product_id=product.id)
+    if "collection_id" in updates:
+        ensure_valid_collection(db, updates["collection_id"])
     for field, value in updates.items():
         setattr(product, field, value)
     db.commit()
@@ -181,6 +265,7 @@ def admin_import_products(payload: ProductImportRequest, db: Session = Depends(g
             raise HTTPException(status_code=409, detail=f"Duplicate slug '{item.slug}' in import payload")
         seen_slugs.add(item.slug)
         ensure_unique_slug(db, item.slug)
+        ensure_valid_collection(db, item.collection_id)
         product = Product(**item.model_dump())
         db.add(product)
         created_products.append(product)

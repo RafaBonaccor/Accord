@@ -1,4 +1,4 @@
-import { Product, ProductInput } from "./types";
+import { Collection, CollectionInput, Product, ProductInput } from "./types";
 
 const SERVER_API_URL =
   process.env.BACKEND_URL ??
@@ -111,6 +111,36 @@ export async function importAdminProducts(
   return adminRequest<{ imported_count: number; items: Product[] }>("/products/import-json", {
     method: "POST",
     body: JSON.stringify({ items }),
+  });
+}
+
+export async function getAdminCollections(): Promise<Collection[]> {
+  const data = await adminRequest<{ items: Collection[] }>("/collections", {
+    method: "GET",
+  });
+  return data.items;
+}
+
+export async function createAdminCollection(payload: CollectionInput): Promise<Collection> {
+  return adminRequest<Collection>("/collections", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function updateAdminCollection(
+  collectionId: number,
+  payload: Partial<CollectionInput>,
+): Promise<Collection> {
+  return adminRequest<Collection>(`/collections/${collectionId}`, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function deleteAdminCollection(collectionId: number): Promise<void> {
+  await adminRequest<void>(`/collections/${collectionId}`, {
+    method: "DELETE",
   });
 }
 

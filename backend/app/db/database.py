@@ -5,6 +5,7 @@ from sqlalchemy.orm import sessionmaker
 
 from app.core.config import settings
 from app.db.base import Base
+from app.models.collection import Collection
 from app.models.order import Order
 from app.models.order_item import OrderItem
 from app.models.product import Product
@@ -82,12 +83,15 @@ def seed_products() -> None:
 
 def ensure_schema_extensions() -> None:
     inspector = inspect(engine)
-    if "orders" not in inspector.get_table_names():
+    tables = inspector.get_table_names()
+    if "orders" not in tables:
         return
 
     existing_columns = {column["name"] for column in inspector.get_columns("orders")}
+    product_columns = {column["name"] for column in inspector.get_columns("products")} if "products" in tables else set()
     dialect = engine.dialect.name
     timestamp_type = "TIMESTAMPTZ" if dialect == "postgresql" else "DATETIME"
+    bigint_type = "BIGINT" if dialect == "postgresql" else "INTEGER"
     additions = {
         "stripe_payment_intent_id": "VARCHAR(255)",
         "customer_name": "VARCHAR(255)",
@@ -107,6 +111,8 @@ def ensure_schema_extensions() -> None:
             if column_name in existing_columns:
                 continue
             connection.execute(text(f"ALTER TABLE orders ADD COLUMN {column_name} {column_type}"))
+        if "collection_id" not in product_columns:
+            connection.execute(text(f"ALTER TABLE products ADD COLUMN collection_id {bigint_type}"))
 
 
 def create_order_record(*, email: str, currency: str, items: list[dict], total_amount_cents: int) -> Order:

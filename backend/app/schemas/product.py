@@ -12,6 +12,9 @@ class ProductResponse(BaseModel):
     image_url: str
     category: str
     material: str
+    collection_id: int | None
+    collection_name: str | None
+    collection_slug: str | None
     featured: bool
 
 
@@ -27,6 +30,7 @@ class ProductCreate(BaseModel):
     image_url: str = Field(min_length=8, max_length=500)
     category: str = Field(min_length=2, max_length=80)
     material: str = Field(min_length=2, max_length=80)
+    collection_id: int | None = None
     featured: bool = False
 
 
@@ -38,6 +42,7 @@ class ProductUpdate(BaseModel):
     image_url: str | None = Field(default=None, min_length=8, max_length=500)
     category: str | None = Field(default=None, min_length=2, max_length=80)
     material: str | None = Field(default=None, min_length=2, max_length=80)
+    collection_id: int | None = None
     featured: bool | None = None
 
 

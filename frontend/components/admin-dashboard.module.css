@@ -2,51 +2,46 @@
   padding: 28px 24px 48px;
 }
 
-.errorModalBackdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 50;
-  display: grid;
-  place-items: center;
-  padding: 20px;
-  background: rgba(17, 17, 17, 0.5);
-}
-
-.errorModal {
-  width: min(560px, 100%);
-  padding: 28px;
-  background: #ffffff;
-  border: 1px solid var(--line);
-  box-shadow: 0 24px 60px rgba(17, 17, 17, 0.18);
-}
-
-.errorModalCopy {
-  margin: 0 0 18px;
-  color: var(--text);
-  line-height: 1.7;
-}
-
-.shell {
-  max-width: 1400px;
+.bookletShell {
+  max-width: 1480px;
   margin: 0 auto;
   display: grid;
-  grid-template-columns: 380px minmax(0, 1fr);
+  grid-template-columns: 360px minmax(0, 1fr);
   gap: 24px;
 }
 
-.panel,
+.bookletMenu,
+.heroCard,
+.statsCard,
+.editorCard,
 .tableWrap,
-.docsCard {
-  background: #ffffff;
+.infoCard {
+  background: linear-gradient(180deg, #ffffff 0%, #fcfaf8 100%);
   border: 1px solid var(--line);
   box-shadow: var(--shadow);
 }
 
-.panel {
+.bookletMenu {
   padding: 24px;
   align-self: start;
   position: sticky;
   top: 24px;
+}
+
+.bookletHeader h1,
+.heroCard h2,
+.editorCard h3,
+.tableWrap h3,
+.infoCard h3,
+.sectionTitle {
+  margin: 0 0 12px;
+  font-family: Georgia, "Times New Roman", serif;
+  font-weight: 400;
+  letter-spacing: -0.03em;
+}
+
+.bookletHeader h1 {
+  font-size: 2.3rem;
 }
 
 .eyebrow {
@@ -57,65 +52,61 @@
   text-transform: uppercase;
 }
 
-.panel h1,
-.sectionTitle,
-.docsCard h2 {
-  margin: 0 0 14px;
-  font-family: Georgia, "Times New Roman", serif;
-  font-weight: 400;
-  letter-spacing: -0.03em;
-}
-
-.panel h1 {
-  font-size: 2.2rem;
-}
-
-.panel p,
+.bookletIntro,
+.heroCard p,
 .helper,
-.docsCard p,
 .table td,
-.table th {
+.table th,
+.infoCard p,
+.errorModalCopy {
   color: var(--muted);
   line-height: 1.65;
 }
 
-.stack {
+.bookletNav {
   display: grid;
+  gap: 12px;
+  margin: 22px 0;
+}
+
+.bookletTab,
+.bookletTabActive {
+  display: grid;
+  grid-template-columns: auto 1fr;
   gap: 14px;
-}
-
-.field {
-  display: grid;
-  gap: 8px;
-}
-
-.field span {
-  font-size: 0.82rem;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-
-.field input,
-.field textarea,
-.field select {
-  width: 100%;
-  padding: 12px 14px;
-  border: 1px solid #d9d1cb;
+  align-items: start;
+  padding: 16px 18px;
+  border: 1px solid var(--line);
   background: #ffffff;
-  font: inherit;
+  text-align: left;
+  cursor: pointer;
 }
 
-.field textarea {
-  min-height: 110px;
-  resize: vertical;
+.bookletTabActive {
+  border-color: #111111;
+  box-shadow: inset 3px 0 0 #111111;
 }
 
-.checkboxRow {
-  display: flex;
-  align-items: center;
-  gap: 10px;
+.bookletTab strong,
+.bookletTabActive strong {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 0.95rem;
 }
 
+.bookletTab small,
+.bookletTabActive small {
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.bookletTabIndex {
+  font-size: 0.82rem;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+}
+
+.bookletActions,
 .actions,
 .inlineActions {
   display: flex;
@@ -156,22 +147,47 @@
   cursor: not-allowed;
 }
 
-.content {
+.statusOk,
+.statusError {
+  margin: 14px 0 0;
+  font-size: 0.92rem;
+}
+
+.statusOk {
+  color: #1d6b39;
+}
+
+.statusError {
+  color: #8f2f1f;
+}
+
+.bookletContent {
   display: grid;
   gap: 24px;
 }
 
+.heroCard,
+.editorCard,
+.tableWrap,
+.infoCard {
+  padding: 24px;
+}
+
+.heroCard {
+  display: grid;
+  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+  gap: 20px;
+  align-items: end;
+}
+
 .stats {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 18px;
 }
 
 .statsCard {
   padding: 20px;
-  background: #ffffff;
-  border: 1px solid var(--line);
-  box-shadow: var(--shadow);
 }
 
 .statsCard strong {
@@ -180,12 +196,65 @@
   font-size: 1.8rem;
   font-family: Georgia, "Times New Roman", serif;
   font-weight: 400;
-  color: var(--text);
 }
 
-.tableWrap,
-.docsCard {
-  padding: 24px;
+.overviewGrid,
+.sectionGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
+  gap: 24px;
+}
+
+.overviewGrid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.formGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.field,
+.fieldWide {
+  display: grid;
+  gap: 8px;
+}
+
+.fieldWide {
+  grid-column: 1 / -1;
+}
+
+.field span,
+.fieldWide span {
+  font-size: 0.82rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.field input,
+.field textarea,
+.field select,
+.fieldWide input,
+.fieldWide textarea {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid #d9d1cb;
+  background: #ffffff;
+  font: inherit;
+}
+
+.field textarea,
+.fieldWide textarea {
+  min-height: 120px;
+  resize: vertical;
+}
+
+.checkboxRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .table {
@@ -209,37 +278,78 @@
   text-transform: uppercase;
 }
 
-.statusOk,
-.statusError {
-  margin: 0;
-  font-size: 0.92rem;
+.collectionList {
+  display: grid;
+  gap: 12px;
 }
 
-.statusOk {
-  color: #1d6b39;
+.collectionCard {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: center;
+  padding: 16px 18px;
+  border: 1px solid var(--line);
+  background: #ffffff;
+  text-align: left;
+  cursor: pointer;
 }
 
-.statusError {
-  color: #8f2f1f;
+.collectionCard strong {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.collectionCard small,
+.collectionMeta {
+  color: var(--muted);
 }
 
 .jsonBlock {
-  margin: 0;
+  margin: 20px 0 0;
   padding: 14px;
   background: #f7f3ef;
   overflow: auto;
   font-size: 0.88rem;
 }
 
-@media (max-width: 1080px) {
-  .shell {
+.errorModalBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(17, 17, 17, 0.5);
+}
+
+.errorModal {
+  width: min(560px, 100%);
+  padding: 28px;
+  background: #ffffff;
+  border: 1px solid var(--line);
+  box-shadow: 0 24px 60px rgba(17, 17, 17, 0.18);
+}
+
+@media (max-width: 1200px) {
+  .bookletShell,
+  .sectionGrid,
+  .heroCard,
+  .overviewGrid {
     grid-template-columns: 1fr;
   }
 
-  .panel {
-    position: static;
+  .stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .bookletMenu {
+    position: static;
+  }
+}
+
+@media (max-width: 720px) {
+  .formGrid,
   .stats {
     grid-template-columns: 1fr;
   }
