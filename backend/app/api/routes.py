@@ -1,3 +1,5 @@
+import logging
+
 from fastapi import APIRouter, Depends, Header, HTTPException, Request, Response, UploadFile, status
 from pydantic import ValidationError
 from sqlalchemy.orm import Session
@@ -42,6 +44,7 @@ from app.services.storage_service import (
 )
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 
 def checkout_base_path(locale: str | None) -> str:
@@ -104,6 +107,7 @@ def _parse_optional_int(value: str | None) -> int | None:
 def _ensure_image_source(image_url: str) -> None:
     if image_url:
         return
+    logger.warning("product payload rejected: missing image source")
     raise HTTPException(
         status_code=422,
         detail="Provide either a product image file in 'file' or a non-empty 'image_url'.",
@@ -116,22 +120,56 @@ def _looks_like_uploaded_file(value: object) -> bool:
     return bool(filename) and callable(read_method)
 
 
+def _log_multipart_debug(context: str, content_type: str, form: object, file_value: object) -> None:
+    try:
+        form_keys = list(form.keys()) if hasattr(form, "keys") else []
+    except Exception:
+        form_keys = []
+
+    logger.warning(
+        "multipart debug [%s]: content_type=%s form_keys=%s file_type=%s file_filename=%s file_content_type=%s looks_like_uploaded_file=%s",
+        context,
+        content_type,
+        form_keys,
+        type(file_value).__name__ if file_value is not None else None,
+        getattr(file_value, "filename", None),
+        getattr(file_value, "content_type", None),
+        _looks_like_uploaded_file(file_value),
+    )
+
+
 async def parse_product_create_payload(request: Request) -> ProductCreate:
     content_type = request.headers.get("content-type", "")
     if "multipart/form-data" not in content_type:
+        logger.warning("create product request received as non-multipart content_type=%s", content_type)
         payload = await request.json()
         product = ProductCreate.model_validate(payload)
+        logger.warning(
+            "create product json payload parsed: slug=%s has_image_url=%s category=%s featured=%s",
+            product.slug,
+            bool(product.image_url),
+            product.category,
+            product.featured,
+        )
         _ensure_image_source(product.image_url)
         return product
 
     form = await request.form()
     image_url = str(form.get("image_url") or "").strip()
     file = form.get("file")
+    _log_multipart_debug("create_product", content_type, form, file)
     if _looks_like_uploaded_file(file):
         try:
             image_url, _ = await upload_product_image(file)
         except (StorageConfigurationError, StorageUploadError) as exc:
+            logger.exception("product image upload failed during create")
             raise HTTPException(status_code=503, detail=str(exc)) from exc
+    else:
+        logger.warning(
+            "create product multipart has no recognized uploaded file: raw_file_type=%s raw_file_value=%s",
+            type(file).__name__ if file is not None else None,
+            str(file)[:200] if file is not None else None,
+        )
 
     payload = {
         "name": str(form.get("name") or "").strip(),
@@ -144,23 +182,35 @@ async def parse_product_create_payload(request: Request) -> ProductCreate:
         "collection_id": _parse_optional_int(str(form.get("collection_id")) if form.get("collection_id") is not None else None),
         "featured": _parse_bool(str(form.get("featured")) if form.get("featured") is not None else None),
     }
+    logger.warning(
+        "create product multipart payload parsed: slug=%s has_image_url=%s image_url_length=%s category=%s featured=%s collection_id=%s",
+        payload["slug"],
+        bool(payload["image_url"]),
+        len(payload["image_url"]),
+        payload["category"],
+        payload["featured"],
+        payload["collection_id"],
+    )
 
     try:
         product = ProductCreate.model_validate(payload)
         _ensure_image_source(product.image_url)
         return product
     except ValidationError as exc:
+        logger.warning("create product validation failed: errors=%s", exc.errors())
         raise HTTPException(status_code=422, detail=exc.errors()) from exc
 
 
 async def parse_product_update_payload(request: Request) -> ProductUpdate:
     content_type = request.headers.get("content-type", "")
     if "multipart/form-data" not in content_type:
+        logger.warning("update product request received as non-multipart content_type=%s", content_type)
         payload = await request.json()
         return ProductUpdate.model_validate(payload)
 
     form = await request.form()
     file = form.get("file")
+    _log_multipart_debug("update_product", content_type, form, file)
     updates: dict[str, object] = {}
 
     field_map = {
@@ -189,12 +239,27 @@ async def parse_product_update_payload(request: Request) -> ProductUpdate:
         try:
             image_url, _ = await upload_product_image(file)
         except (StorageConfigurationError, StorageUploadError) as exc:
+            logger.exception("product image upload failed during update")
             raise HTTPException(status_code=503, detail=str(exc)) from exc
         updates["image_url"] = image_url
+    else:
+        logger.warning(
+            "update product multipart has no recognized uploaded file: raw_file_type=%s raw_file_value=%s",
+            type(file).__name__ if file is not None else None,
+            str(file)[:200] if file is not None else None,
+        )
+
+    logger.warning(
+        "update product multipart payload parsed: keys=%s has_image_url=%s image_url_length=%s",
+        sorted(updates.keys()),
+        bool(updates.get("image_url")),
+        len(str(updates.get("image_url") or "")),
+    )
 
     try:
         return ProductUpdate.model_validate(updates)
     except ValidationError as exc:
+        logger.warning("update product validation failed: errors=%s", exc.errors())
         raise HTTPException(status_code=422, detail=exc.errors()) from exc
 
 
