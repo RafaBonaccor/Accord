@@ -87,6 +87,9 @@ npm run dev
 - `ADMIN_USERNAME`: username login admin
 - `ADMIN_PASSWORD`: password login admin
 - `ADMIN_SESSION_SECRET`: secret usato per firmare la sessione admin `httpOnly`
+- `SUPABASE_URL`: URL progetto Supabase per upload immagini admin
+- `SUPABASE_SERVICE_ROLE_KEY`: chiave service role usata solo server-side per upload su Storage
+- `SUPABASE_STORAGE_BUCKET`: bucket pubblico per immagini prodotto, ad esempio `products`
 
 ## Funzionalita incluse
 

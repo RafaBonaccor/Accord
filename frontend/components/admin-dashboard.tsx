@@ -12,6 +12,7 @@ import {
   getAdminCollections,
   getAdminProducts,
   importAdminProducts,
+  uploadAdminProductImage,
   updateAdminCollection,
   updateAdminProduct,
 } from "../lib/api";
@@ -55,6 +56,8 @@ export function AdminDashboard() {
   const [selectedProductId, setSelectedProductId] = useState<number | null>(null);
   const [selectedCollectionId, setSelectedCollectionId] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
+  const [imageUploading, setImageUploading] = useState(false);
+  const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
   const [status, setStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [popupMessage, setPopupMessage] = useState<string | null>(null);
@@ -139,6 +142,7 @@ export function AdminDashboard() {
   function resetProductForm() {
     setForm(emptyProduct);
     setSelectedProductId(null);
+    setSelectedImageFile(null);
   }
 
   function resetCollectionForm() {
@@ -160,6 +164,7 @@ export function AdminDashboard() {
       collection_id: product.collection_id,
       featured: product.featured,
     });
+    setSelectedImageFile(null);
   }
 
   function fillCollectionForm(collection: Collection) {
@@ -178,10 +183,10 @@ export function AdminDashboard() {
     setStatus(null);
     try {
       if (selectedProductId) {
-        await updateAdminProduct(selectedProductId, form);
+        await updateAdminProduct(selectedProductId, form, selectedImageFile);
         setStatus(`Prodotto #${selectedProductId} aggiornato`);
       } else {
-        const created = await createAdminProduct(form);
+        const created = await createAdminProduct(form, selectedImageFile);
         setStatus(`Prodotto creato: #${created.id}`);
       }
       resetProductForm();
@@ -190,6 +195,25 @@ export function AdminDashboard() {
       showAdminError(saveError);
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleImageUpload(file: File | null) {
+    if (!file) {
+      return;
+    }
+
+    setImageUploading(true);
+    setError(null);
+    setStatus(null);
+    try {
+      const uploaded = await uploadAdminProductImage(file);
+      setForm((current) => ({ ...current, image_url: uploaded.image_url }));
+      setStatus("Immagine caricata correttamente e collegata al prodotto.");
+    } catch (uploadError) {
+      showAdminError(uploadError);
+    } finally {
+      setImageUploading(false);
     }
   }
 
@@ -458,6 +482,21 @@ export function AdminDashboard() {
                       onChange={(event) => setForm({ ...form, image_url: event.target.value })}
                     />
                   </label>
+                  <label className={styles.fieldWide}>
+                    <span>Carica immagine dal PC</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(event) => {
+                        const file = event.target.files?.[0] ?? null;
+                        setSelectedImageFile(file);
+                        void handleImageUpload(file);
+                      }}
+                    />
+                    <small className={styles.fieldHint}>
+                      Seleziona un file dal PC. Al salvataggio prodotto, file e dati viaggiano nella stessa richiesta `multipart/form-data`.
+                    </small>
+                  </label>
                   <label className={styles.field}>
                     <span>Categoria</span>
                     <input
@@ -503,6 +542,9 @@ export function AdminDashboard() {
                 <div className={styles.actions}>
                   <button type="button" className={styles.primaryButton} onClick={handleSaveProduct} disabled={loading}>
                     {selectedProductId ? "Salva modifiche" : "Crea prodotto"}
+                  </button>
+                  <button type="button" className={styles.secondaryButton} disabled={imageUploading}>
+                    {imageUploading ? "Upload immagine..." : "Storage pronto"}
                   </button>
                   <button type="button" className={styles.secondaryButton} onClick={resetProductForm} disabled={loading}>
                     Reset

@@ -233,6 +233,11 @@
   text-transform: uppercase;
 }
 
+.fieldHint {
+  color: var(--muted);
+  line-height: 1.5;
+}
+
 .field input,
 .field textarea,
 .field select,

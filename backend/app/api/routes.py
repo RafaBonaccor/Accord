@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Depends, Header, HTTPException, Request, Response, status
+from fastapi import APIRouter, Depends, Header, HTTPException, Request, Response, UploadFile, status
+from pydantic import ValidationError
 from sqlalchemy.orm import Session
 from stripe.error import SignatureVerificationError
 import stripe
@@ -33,6 +34,11 @@ from app.services.stripe_service import (
     StripeCheckoutConfigurationError,
     StripeCheckoutRequestError,
     create_checkout_session,
+)
+from app.services.storage_service import (
+    StorageConfigurationError,
+    StorageUploadError,
+    upload_product_image,
 )
 
 router = APIRouter()
@@ -78,6 +84,96 @@ def ensure_unique_collection_slug(db: Session, slug: str, current_collection_id:
     existing = db.query(Collection).filter(Collection.slug == slug).first()
     if existing and existing.id != current_collection_id:
         raise HTTPException(status_code=409, detail=f"Collection slug '{slug}' already exists")
+
+
+def _parse_bool(value: str | None) -> bool:
+    if value is None:
+        return False
+    return value.strip().lower() in {"1", "true", "on", "yes"}
+
+
+def _parse_optional_int(value: str | None) -> int | None:
+    if value is None:
+        return None
+    stripped = value.strip()
+    if not stripped:
+        return None
+    return int(stripped)
+
+
+async def parse_product_create_payload(request: Request) -> ProductCreate:
+    content_type = request.headers.get("content-type", "")
+    if "multipart/form-data" not in content_type:
+        payload = await request.json()
+        return ProductCreate.model_validate(payload)
+
+    form = await request.form()
+    image_url = str(form.get("image_url") or "").strip()
+    file = form.get("file")
+    if isinstance(file, UploadFile) and file.filename:
+        try:
+            image_url, _ = await upload_product_image(file)
+        except (StorageConfigurationError, StorageUploadError) as exc:
+            raise HTTPException(status_code=503, detail=str(exc)) from exc
+
+    payload = {
+        "name": str(form.get("name") or "").strip(),
+        "slug": str(form.get("slug") or "").strip(),
+        "description": str(form.get("description") or "").strip(),
+        "price_cents": int(str(form.get("price_cents") or "0").strip() or "0"),
+        "image_url": image_url,
+        "category": str(form.get("category") or "").strip(),
+        "material": str(form.get("material") or "").strip(),
+        "collection_id": _parse_optional_int(str(form.get("collection_id")) if form.get("collection_id") is not None else None),
+        "featured": _parse_bool(str(form.get("featured")) if form.get("featured") is not None else None),
+    }
+
+    try:
+        return ProductCreate.model_validate(payload)
+    except ValidationError as exc:
+        raise HTTPException(status_code=422, detail=exc.errors()) from exc
+
+
+async def parse_product_update_payload(request: Request) -> ProductUpdate:
+    content_type = request.headers.get("content-type", "")
+    if "multipart/form-data" not in content_type:
+        payload = await request.json()
+        return ProductUpdate.model_validate(payload)
+
+    form = await request.form()
+    file = form.get("file")
+    updates: dict[str, object] = {}
+
+    field_map = {
+        "name": lambda v: v.strip(),
+        "slug": lambda v: v.strip(),
+        "description": lambda v: v.strip(),
+        "price_cents": lambda v: int(v.strip() or "0"),
+        "image_url": lambda v: v.strip(),
+        "category": lambda v: v.strip(),
+        "material": lambda v: v.strip(),
+        "collection_id": _parse_optional_int,
+        "featured": _parse_bool,
+    }
+
+    for field_name, parser in field_map.items():
+        raw = form.get(field_name)
+        if raw is None:
+            continue
+        raw_value = str(raw)
+        updates[field_name] = parser(raw_value)
+
+    if isinstance(file, UploadFile) and file.filename:
+        try:
+            image_url, _ = await upload_product_image(file)
+        except (StorageConfigurationError, StorageUploadError) as exc:
+            raise HTTPException(status_code=503, detail=str(exc)) from exc
+        updates["image_url"] = image_url
+
+    try:
+        return ProductUpdate.model_validate(updates)
+    except ValidationError as exc:
+        raise HTTPException(status_code=422, detail=exc.errors()) from exc
 
 
 def parse_order_id_from_session(session: dict) -> int | None:
@@ -217,7 +313,8 @@ def admin_delete_collection(collection_id: int, db: Session = Depends(get_db)) -
     status_code=status.HTTP_201_CREATED,
     dependencies=[Depends(require_admin)],
 )
-def admin_create_product(payload: ProductCreate, db: Session = Depends(get_db)) -> ProductResponse:
+async def admin_create_product(request: Request, db: Session = Depends(get_db)) -> ProductResponse:
+    payload = await parse_product_create_payload(request)
     ensure_unique_slug(db, payload.slug)
     ensure_valid_collection(db, payload.collection_id)
     product = Product(**payload.model_dump())
@@ -228,7 +325,8 @@ def admin_create_product(payload: ProductCreate, db: Session = Depends(get_db)) 
 
 
 @router.patch("/admin/products/{product_id}", response_model=ProductResponse, dependencies=[Depends(require_admin)])
-def admin_update_product(product_id: int, payload: ProductUpdate, db: Session = Depends(get_db)) -> ProductResponse:
+async def admin_update_product(product_id: int, request: Request, db: Session = Depends(get_db)) -> ProductResponse:
+    payload = await parse_product_update_payload(request)
     product = get_product_or_404(db, product_id)
     updates = payload.model_dump(exclude_unset=True)
     if "slug" in updates:

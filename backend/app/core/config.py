@@ -13,6 +13,9 @@ class Settings(BaseSettings):
     stripe_webhook_secret: str = ""
     stripe_price_currency: str = "eur"
     stripe_shipping_countries: str = default_shipping_countries
+    supabase_url: str = ""
+    supabase_service_role_key: str = ""
+    supabase_storage_bucket: str = "products"
     frontend_url: str = default_frontend_url
     admin_api_token: str = "change-me-admin-token"
 

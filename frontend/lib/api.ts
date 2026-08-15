@@ -20,6 +20,33 @@ export class ApiRequestError extends Error {
   }
 }
 
+export async function uploadAdminProductImage(file: File): Promise<{ image_url: string; path: string }> {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  let response: Response;
+  try {
+    response = await fetch("/admin-api/uploads/product-image", {
+      method: "POST",
+      body: formData,
+    });
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : "Unknown upload error";
+    throw new ApiRequestError("Unable to reach upload service", 0, detail);
+  }
+
+  if (!response.ok) {
+    let detail: string | undefined;
+    try {
+      const data = (await response.json()) as { detail?: string };
+      detail = data.detail;
+    } catch {}
+    throw new ApiRequestError(detail ?? "Image upload failed", response.status, detail);
+  }
+
+  return (await response.json()) as { image_url: string; path: string };
+}
+
 export async function getProducts(): Promise<Product[]> {
   const response = await fetch(`${SERVER_API_URL}/api/products`, { cache: "no-store" });
   if (!response.ok) {
@@ -75,6 +102,23 @@ async function adminRequest<T>(path: string, init?: RequestInit): Promise<T> {
   return (await response.json()) as T;
 }
 
+function buildProductFormData(payload: ProductInput, file?: File | null): FormData {
+  const formData = new FormData();
+  formData.append("name", payload.name);
+  formData.append("slug", payload.slug);
+  formData.append("description", payload.description);
+  formData.append("price_cents", String(payload.price_cents));
+  formData.append("image_url", payload.image_url);
+  formData.append("category", payload.category);
+  formData.append("material", payload.material);
+  formData.append("collection_id", payload.collection_id == null ? "" : String(payload.collection_id));
+  formData.append("featured", payload.featured ? "true" : "false");
+  if (file) {
+    formData.append("file", file);
+  }
+  return formData;
+}
+
 export async function getAdminProducts(): Promise<Product[]> {
   const data = await adminRequest<{ items: Product[] }>("/products", {
     method: "GET",
@@ -82,20 +126,36 @@ export async function getAdminProducts(): Promise<Product[]> {
   return data.items;
 }
 
-export async function createAdminProduct(payload: ProductInput): Promise<Product> {
+export async function createAdminProduct(payload: ProductInput, file?: File | null): Promise<Product> {
+  const isMultipart = !!file;
   return adminRequest<Product>("/products", {
     method: "POST",
-    body: JSON.stringify(payload),
+    headers: isMultipart ? undefined : { "Content-Type": "application/json" },
+    body: isMultipart ? buildProductFormData(payload, file) : JSON.stringify(payload),
   });
 }
 
 export async function updateAdminProduct(
   productId: number,
   payload: Partial<ProductInput>,
+  file?: File | null,
 ): Promise<Product> {
+  const isMultipart = !!file;
+  const multipartPayload: ProductInput = {
+    name: payload.name ?? "",
+    slug: payload.slug ?? "",
+    description: payload.description ?? "",
+    price_cents: payload.price_cents ?? 0,
+    image_url: payload.image_url ?? "",
+    category: payload.category ?? "",
+    material: payload.material ?? "",
+    collection_id: payload.collection_id ?? null,
+    featured: payload.featured ?? false,
+  };
   return adminRequest<Product>(`/products/${productId}`, {
     method: "PATCH",
-    body: JSON.stringify(payload),
+    headers: isMultipart ? undefined : { "Content-Type": "application/json" },
+    body: isMultipart ? buildProductFormData(multipartPayload, file) : JSON.stringify(payload),
   });
 }
 
