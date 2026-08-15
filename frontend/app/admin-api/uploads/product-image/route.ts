@@ -1,6 +1,37 @@
 import { ensureAdminSession } from "../../../../lib/admin-api-server";
 import { uploadProductImage } from "../../../../lib/supabase-storage";
 
+const ALLOWED_IMAGE_EXTENSIONS = new Set([
+  ".jpg",
+  ".jpeg",
+  ".png",
+  ".webp",
+  ".gif",
+  ".bmp",
+  ".tif",
+  ".tiff",
+  ".svg",
+  ".avif",
+  ".heic",
+  ".heif",
+  ".jfif",
+]);
+
+function isAcceptedImageFile(file: File): boolean {
+  if (file.type.startsWith("image/")) {
+    return true;
+  }
+
+  const fileName = file.name.toLowerCase();
+  for (const extension of ALLOWED_IMAGE_EXTENSIONS) {
+    if (fileName.endsWith(extension)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 export async function POST(request: Request): Promise<Response> {
   const unauthorized = await ensureAdminSession();
   if (unauthorized) {
@@ -19,8 +50,11 @@ export async function POST(request: Request): Promise<Response> {
     return Response.json({ detail: "Missing image file" }, { status: 400 });
   }
 
-  if (!file.type.startsWith("image/")) {
-    return Response.json({ detail: "Only image uploads are supported" }, { status: 422 });
+  if (!isAcceptedImageFile(file)) {
+    return Response.json(
+      { detail: "Unsupported image format. Use jpg, jpeg, png, webp, gif, bmp, tif, tiff, svg, avif, heic or heif." },
+      { status: 422 },
+    );
   }
 
   try {

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import mimetypes
 import random
 import re
 import time
@@ -17,6 +18,23 @@ class StorageConfigurationError(Exception):
 
 class StorageUploadError(Exception):
     pass
+
+
+ALLOWED_IMAGE_EXTENSIONS = {
+    ".jpg",
+    ".jpeg",
+    ".png",
+    ".webp",
+    ".gif",
+    ".bmp",
+    ".tif",
+    ".tiff",
+    ".svg",
+    ".avif",
+    ".heic",
+    ".heif",
+    ".jfif",
+}
 
 
 def _require_storage_config() -> tuple[str, str, str]:
@@ -43,6 +61,32 @@ def _build_storage_path(filename: str) -> str:
     return f"admin/{_slugify_filename(filename)}-{stamp}{extension}"
 
 
+def _resolve_image_content_type(file: UploadFile) -> str:
+    extension = Path(file.filename or "").suffix.lower()
+    guessed_type, _ = mimetypes.guess_type(file.filename or "")
+    declared_type = (file.content_type or "").strip().lower()
+
+    if declared_type.startswith("image/"):
+        return declared_type
+    if extension in ALLOWED_IMAGE_EXTENSIONS and guessed_type:
+        return guessed_type
+    if extension in ALLOWED_IMAGE_EXTENSIONS:
+        if extension in {".jpg", ".jpeg", ".jfif"}:
+            return "image/jpeg"
+        if extension == ".svg":
+            return "image/svg+xml"
+        if extension == ".heic":
+            return "image/heic"
+        if extension == ".heif":
+            return "image/heif"
+        return f"image/{extension.lstrip('.')}"
+    if guessed_type and guessed_type.startswith("image/"):
+        return guessed_type
+    raise StorageUploadError(
+        "Unsupported image format. Use jpg, jpeg, png, webp, gif, bmp, tif, tiff, svg, avif, heic or heif."
+    )
+
+
 async def upload_product_image(file: UploadFile) -> tuple[str, str]:
     supabase_url, service_role_key, bucket = _require_storage_config()
     if not file.filename:
@@ -50,7 +94,9 @@ async def upload_product_image(file: UploadFile) -> tuple[str, str]:
 
     path = _build_storage_path(file.filename)
     payload = await file.read()
-    content_type = file.content_type or "application/octet-stream"
+    if not payload:
+        raise StorageUploadError("Image file is empty")
+    content_type = _resolve_image_content_type(file)
 
     response = requests.post(
         f"{supabase_url}/storage/v1/object/{bucket}/{path}",
