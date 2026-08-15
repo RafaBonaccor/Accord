@@ -101,11 +101,22 @@ def _parse_optional_int(value: str | None) -> int | None:
     return int(stripped)
 
 
+def _ensure_image_source(image_url: str) -> None:
+    if image_url:
+        return
+    raise HTTPException(
+        status_code=422,
+        detail="Provide either a product image file in 'file' or a non-empty 'image_url'.",
+    )
+
+
 async def parse_product_create_payload(request: Request) -> ProductCreate:
     content_type = request.headers.get("content-type", "")
     if "multipart/form-data" not in content_type:
         payload = await request.json()
-        return ProductCreate.model_validate(payload)
+        product = ProductCreate.model_validate(payload)
+        _ensure_image_source(product.image_url)
+        return product
 
     form = await request.form()
     image_url = str(form.get("image_url") or "").strip()
@@ -129,7 +140,9 @@ async def parse_product_create_payload(request: Request) -> ProductCreate:
     }
 
     try:
-        return ProductCreate.model_validate(payload)
+        product = ProductCreate.model_validate(payload)
+        _ensure_image_source(product.image_url)
+        return product
     except ValidationError as exc:
         raise HTTPException(status_code=422, detail=exc.errors()) from exc
 
@@ -161,7 +174,10 @@ async def parse_product_update_payload(request: Request) -> ProductUpdate:
         if raw is None:
             continue
         raw_value = str(raw)
-        updates[field_name] = parser(raw_value)
+        parsed_value = parser(raw_value)
+        if field_name == "image_url" and parsed_value == "":
+            continue
+        updates[field_name] = parsed_value
 
     if isinstance(file, UploadFile) and file.filename:
         try:
