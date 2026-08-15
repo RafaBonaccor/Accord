@@ -110,6 +110,12 @@ def _ensure_image_source(image_url: str) -> None:
     )
 
 
+def _looks_like_uploaded_file(value: object) -> bool:
+    filename = getattr(value, "filename", None)
+    read_method = getattr(value, "read", None)
+    return bool(filename) and callable(read_method)
+
+
 async def parse_product_create_payload(request: Request) -> ProductCreate:
     content_type = request.headers.get("content-type", "")
     if "multipart/form-data" not in content_type:
@@ -121,7 +127,7 @@ async def parse_product_create_payload(request: Request) -> ProductCreate:
     form = await request.form()
     image_url = str(form.get("image_url") or "").strip()
     file = form.get("file")
-    if isinstance(file, UploadFile) and file.filename:
+    if _looks_like_uploaded_file(file):
         try:
             image_url, _ = await upload_product_image(file)
         except (StorageConfigurationError, StorageUploadError) as exc:
@@ -179,7 +185,7 @@ async def parse_product_update_payload(request: Request) -> ProductUpdate:
             continue
         updates[field_name] = parsed_value
 
-    if isinstance(file, UploadFile) and file.filename:
+    if _looks_like_uploaded_file(file):
         try:
             image_url, _ = await upload_product_image(file)
         except (StorageConfigurationError, StorageUploadError) as exc:
