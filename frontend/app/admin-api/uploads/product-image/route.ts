@@ -1,5 +1,5 @@
-import { ensureAdminSession } from "../../../../../lib/admin-api-server";
-import { uploadProductImage } from "../../../../../lib/supabase-storage";
+import { ensureAdminSession } from "../../../../lib/admin-api-server";
+import { uploadProductImage } from "../../../../lib/supabase-storage";
 
 export async function POST(request: Request): Promise<Response> {
   const unauthorized = await ensureAdminSession();
