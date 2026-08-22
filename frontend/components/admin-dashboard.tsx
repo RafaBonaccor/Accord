@@ -46,6 +46,15 @@ const emptyCollection: CollectionInput = {
   description: "",
 };
 
+const productCategoryOptions = [
+  { value: "Charms", label: "Charms", note: "Pendenti, mini simboli e dettagli da collezione." },
+  { value: "Bracelets", label: "Bracelets", note: "Rigidi, tennis e catene da layering." },
+  { value: "Rings", label: "Rings", note: "Anelli statement, pave e silhouette essenziali." },
+  { value: "Earrings", label: "Earrings", note: "Hoops, punti luce e modelli pendenti." },
+  { value: "Necklaces", label: "Necklaces", note: "Collane sottili, charms e girocollo." },
+  { value: "New Arrivals", label: "New arrivals", note: "Drop recenti e capsule appena pubblicate." },
+];
+
 export function AdminDashboard() {
   const [activeSection, setActiveSection] = useState<AdminSection>("overview");
   const [products, setProducts] = useState<Product[]>([]);
@@ -497,13 +506,32 @@ export function AdminDashboard() {
                       Seleziona un file dal PC. Al salvataggio prodotto, file e dati viaggiano nella stessa richiesta `multipart/form-data`.
                     </small>
                   </label>
-                  <label className={styles.field}>
+                  <div className={styles.fieldWide}>
                     <span>Categoria</span>
+                    <div className={styles.categoryBooklet} role="list" aria-label="Categorie prodotto">
+                      {productCategoryOptions.map((option, index) => {
+                        const active = form.category.toLowerCase() === option.value.toLowerCase();
+                        return (
+                          <button
+                            key={option.value}
+                            type="button"
+                            role="listitem"
+                            className={active ? styles.categoryOptionActive : styles.categoryOption}
+                            onClick={() => setForm({ ...form, category: option.value })}
+                          >
+                            <span className={styles.categoryOptionIndex}>{String(index + 1).padStart(2, "0")}</span>
+                            <strong>{option.label}</strong>
+                            <small>{option.note}</small>
+                          </button>
+                        );
+                      })}
+                    </div>
                     <input
                       value={form.category}
                       onChange={(event) => setForm({ ...form, category: event.target.value })}
+                      placeholder="Oppure inserisci una categoria personalizzata"
                     />
-                  </label>
+                  </div>
                   <label className={styles.field}>
                     <span>Materiale</span>
                     <input

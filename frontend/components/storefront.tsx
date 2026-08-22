@@ -58,10 +58,10 @@ export function Storefront({ products, locale }: Props) {
                         ? categoryLinks.earrings
                         : index === 5
                           ? categoryLinks.necklaces
-                    : "#shop";
+                          : "#shop";
           return (
             <a key={pill} href={href} className={styles.categoryPill}>
-            {pill}
+              {pill}
             </a>
           );
         })}
