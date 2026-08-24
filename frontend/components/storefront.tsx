@@ -194,6 +194,27 @@ export function Storefront({ products, locale }: Props) {
             </div>
           </section>
 
+          <section className={styles.reviewsSection}>
+            <div className={styles.sectionHeader}>
+              <div>
+                <p className={styles.eyebrow}>{copy.reviewsEyebrow}</p>
+                <h2>{copy.reviewsTitle}</h2>
+              </div>
+              <p>{copy.reviewsBody}</p>
+            </div>
+            <div className={styles.reviewsGrid}>
+              {copy.reviews.map((review) => (
+                <article key={`${review.author}-${review.meta}`} className={styles.reviewCard}>
+                  <p className={styles.reviewQuote}>&ldquo;{review.quote}&rdquo;</p>
+                  <div className={styles.reviewFooter}>
+                    <strong>{review.author}</strong>
+                    <span>{review.meta}</span>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </section>
+
           <section className={styles.seoSection}>
             <div className={styles.seoTextBlock}>
               <p className={styles.meta}>{copy.seoMeta}</p>

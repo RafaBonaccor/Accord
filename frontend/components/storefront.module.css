@@ -73,6 +73,7 @@
 
 .arrivalsSection,
 .featureSection,
+.reviewsSection,
 .seoSection,
 .cart {
   background: var(--panel);
@@ -83,6 +84,7 @@
 .arrivalsSection,
 .featureSection,
 .gridSection,
+.reviewsSection,
 .seoSection {
   padding: 28px;
 }
@@ -260,6 +262,42 @@
   height: 32px;
   padding: 0;
   border-radius: 50%;
+}
+
+.reviewsGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.reviewCard {
+  padding: 22px;
+  border: 1px solid var(--line);
+  background: linear-gradient(180deg, #fcfaf8 0%, #ffffff 100%);
+}
+
+.reviewQuote {
+  margin: 0 0 24px;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.3rem;
+  line-height: 1.55;
+  letter-spacing: -0.02em;
+}
+
+.reviewFooter {
+  display: grid;
+  gap: 4px;
+}
+
+.reviewFooter strong {
+  font-size: 0.9rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.reviewFooter span {
+  color: var(--muted);
+  font-size: 0.9rem;
 }
 
 .seoSection {
@@ -489,6 +527,7 @@
   .utilityStrip,
   .featureRow,
   .grid,
+  .reviewsGrid,
   .seoSection {
     grid-template-columns: 1fr;
   }
