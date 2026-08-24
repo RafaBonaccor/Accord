@@ -43,10 +43,6 @@ type StorefrontCopy = {
   seoMeta: string;
   seoTitle: string;
   seoBody: string;
-  reviewsEyebrow: string;
-  reviewsTitle: string;
-  reviewsBody: string;
-  reviews: Array<{ quote: string; author: string; meta: string }>;
   seoPoints: Array<{ title: string; body: string }>;
   seoLinkLabel: string;
   cartTitle: string;
@@ -162,26 +158,6 @@ export const storefrontCopy: Record<Locale, StorefrontCopy> = {
     seoTitle: "Il mondo Accordi",
     seoBody:
       "Linee luminose, dettagli da regalare e una selezione pensata per accompagnare ogni giorno.",
-    reviewsEyebrow: "Recensioni",
-    reviewsTitle: "Cosa dicono le clienti",
-    reviewsBody: "Una selezione di feedback mock per dare piu atmosfera e fiducia alla home.",
-    reviews: [
-      {
-        quote: "I dettagli sono ancora piu belli dal vivo e la confezione regalo e arrivata molto curata.",
-        author: "Giulia R.",
-        meta: "Milano · Charm e bracciali",
-      },
-      {
-        quote: "Ho scelto un paio di orecchini per un regalo e l'effetto e stato davvero elegante.",
-        author: "Martina L.",
-        meta: "Roma · Orecchini",
-      },
-      {
-        quote: "Mi piace il taglio contemporaneo della collezione, facile da indossare ogni giorno.",
-        author: "Sofia C.",
-        meta: "Torino · Anelli e collane",
-      },
-    ],
     seoPoints: [
       {
         title: "Da regalare",
@@ -236,26 +212,6 @@ export const storefrontCopy: Record<Locale, StorefrontCopy> = {
     seoTitle: "The Accordi world",
     seoBody:
       "Luminous details, gift-ready pieces and a refined selection designed for everyday elegance.",
-    reviewsEyebrow: "Reviews",
-    reviewsTitle: "What customers say",
-    reviewsBody: "A curated set of mock reviews to add trust and atmosphere to the storefront.",
-    reviews: [
-      {
-        quote: "The details feel even more refined in person and the gift packaging looked premium.",
-        author: "Olivia M.",
-        meta: "London · Charms and bracelets",
-      },
-      {
-        quote: "I ordered earrings as a gift and the whole presentation felt polished and easy.",
-        author: "Emma T.",
-        meta: "Dublin · Earrings",
-      },
-      {
-        quote: "The collection has a modern softness that works perfectly for everyday styling.",
-        author: "Chloe S.",
-        meta: "Manchester · Rings and necklaces",
-      },
-    ],
     seoPoints: [
       {
         title: "Giftable pieces",

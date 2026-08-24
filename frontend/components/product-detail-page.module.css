@@ -197,6 +197,43 @@
   line-height: 1.7;
 }
 
+.reviewsGrid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.reviewCard {
+  padding: 1.25rem;
+  border: 1px solid rgba(140, 95, 65, 0.15);
+  border-radius: 1.5rem;
+  background: rgba(255, 255, 255, 0.76);
+}
+
+.reviewQuote {
+  margin: 0 0 1.2rem;
+  color: #2f241f;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.15rem;
+  line-height: 1.65;
+}
+
+.reviewFooter {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.reviewFooter strong {
+  font-size: 0.84rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.reviewFooter span {
+  color: rgba(53, 44, 38, 0.62);
+  font-size: 0.9rem;
+}
+
 .relatedGrid {
   display: grid;
   gap: 1.25rem;
@@ -255,6 +292,7 @@
     min-height: 480px;
   }
 
+  .reviewsGrid,
   .relatedGrid {
     grid-template-columns: 1fr;
   }

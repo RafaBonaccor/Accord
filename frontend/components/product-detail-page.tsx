@@ -17,6 +17,12 @@ type Props = {
   relatedProducts: Product[];
 };
 
+type ProductReview = {
+  quote: string;
+  author: string;
+  meta: string;
+};
+
 const copy = {
   it: {
     home: "Home",
@@ -26,6 +32,8 @@ const copy = {
     detailsTitle: "Dettagli prodotto",
     detailsBody:
       "Finiture, materiali e dettagli pensati per accompagnare il prodotto con chiarezza.",
+    reviewsTitle: "Recensioni",
+    reviewsBody: "Feedback mock inseriti per dare piu credibilita e contesto alla scheda prodotto.",
     relatedTitle: "Potrebbe piacerti anche",
     relatedBody:
       "Altri pezzi selezionati per essere abbinati con naturalezza.",
@@ -40,6 +48,8 @@ const copy = {
     detailsTitle: "Product details",
     detailsBody:
       "Finishes, materials and details designed to present the piece with clarity.",
+    reviewsTitle: "Reviews",
+    reviewsBody: "Mock feedback added to give the product page more context and trust.",
     relatedTitle: "You may also like",
     relatedBody:
       "More selected pieces designed to pair naturally with this style.",
@@ -48,11 +58,53 @@ const copy = {
   },
 } as const;
 
+function productReviews(locale: Locale, product: Product): ProductReview[] {
+  const categoryLabel = categoryLabelForProduct(locale, product);
+  if (locale === "it") {
+    return [
+      {
+        quote: `Dal vivo questo ${categoryLabel.toLowerCase()} risulta ancora piu luminoso e rifinito di quanto immaginassi.`,
+        author: "Giulia R.",
+        meta: "Acquisto verificato · Agosto 2026",
+      },
+      {
+        quote: "Confezione molto curata e vestibilita immediata. Ha un effetto elegante ma resta facile da portare ogni giorno.",
+        author: "Martina L.",
+        meta: "Cliente abituale · Luglio 2026",
+      },
+      {
+        quote: `L'ho scelto come regalo e ha trasmesso subito una sensazione premium, soprattutto nei dettagli e nella finitura ${product.material.toLowerCase()}.`,
+        author: "Sofia C.",
+        meta: "Gift order · Giugno 2026",
+      },
+    ];
+  }
+
+  return [
+    {
+      quote: `This ${categoryLabel.toLowerCase()} feels even more polished in person and the finish looks genuinely refined.`,
+      author: "Olivia M.",
+      meta: "Verified purchase · August 2026",
+    },
+    {
+      quote: "Beautiful presentation, easy to wear and elegant without feeling too formal for everyday styling.",
+      author: "Emma T.",
+      meta: "Returning customer · July 2026",
+    },
+    {
+      quote: `I bought it as a gift and it immediately felt premium, especially in the ${product.material.toLowerCase()} details.`,
+      author: "Chloe S.",
+      meta: "Gift order · June 2026",
+    },
+  ];
+}
+
 export function ProductDetailPage({ locale, product, relatedProducts }: Props) {
   const labels = copy[locale];
   const categoryPath = categoryPathForProduct(locale, product);
   const categoryLabel = categoryLabelForProduct(locale, product);
   const homePath = locale === "en" ? "/en" : "/";
+  const reviews = productReviews(locale, product);
 
   return (
     <main className={styles.page}>
@@ -111,6 +163,24 @@ export function ProductDetailPage({ locale, product, relatedProducts }: Props) {
         <div className={styles.sectionHeader}>
           <h2>{labels.detailsTitle}</h2>
           <p>{labels.detailsBody}</p>
+        </div>
+      </section>
+
+      <section className={styles.section}>
+        <div className={styles.sectionHeader}>
+          <h2>{labels.reviewsTitle}</h2>
+          <p>{labels.reviewsBody}</p>
+        </div>
+        <div className={styles.reviewsGrid}>
+          {reviews.map((review) => (
+            <article key={`${review.author}-${review.meta}`} className={styles.reviewCard}>
+              <p className={styles.reviewQuote}>&ldquo;{review.quote}&rdquo;</p>
+              <div className={styles.reviewFooter}>
+                <strong>{review.author}</strong>
+                <span>{review.meta}</span>
+              </div>
+            </article>
+          ))}
         </div>
       </section>
 
