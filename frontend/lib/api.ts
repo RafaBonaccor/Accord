@@ -76,13 +76,14 @@ export async function getProductBySlug(slug: string): Promise<Product | null> {
 }
 
 async function adminRequest<T>(path: string, init?: RequestInit): Promise<T> {
+  const hasFormDataBody = init?.body instanceof FormData;
   let response: Response;
   try {
     response = await fetch(`/admin-api${path}`, {
       ...init,
       headers: {
         ...(adminSessionToken ? { [ADMIN_SESSION_HEADER]: adminSessionToken } : {}),
-        "Content-Type": "application/json",
+        ...(hasFormDataBody ? {} : { "Content-Type": "application/json" }),
         ...(init?.headers ?? {}),
       },
     });
