@@ -7,6 +7,13 @@ const SERVER_API_URL =
   "http://localhost:3000/api";
 const BROWSER_API_URL =
   process.env.NEXT_PUBLIC_API_URL ?? process.env.NEXT_PUBLIC_BACKEND_URL ?? "/api";
+const ADMIN_SESSION_HEADER = "x-admin-session";
+
+let adminSessionToken = "";
+
+export function setAdminSessionToken(token: string): void {
+  adminSessionToken = token;
+}
 
 export class ApiRequestError extends Error {
   status: number;
@@ -28,6 +35,7 @@ export async function uploadAdminProductImage(file: File): Promise<{ image_url: 
   try {
     response = await fetch("/admin-api/uploads/product-image", {
       method: "POST",
+      headers: adminSessionToken ? { [ADMIN_SESSION_HEADER]: adminSessionToken } : undefined,
       body: formData,
     });
   } catch (error) {
@@ -73,6 +81,7 @@ async function adminRequest<T>(path: string, init?: RequestInit): Promise<T> {
     response = await fetch(`/admin-api${path}`, {
       ...init,
       headers: {
+        ...(adminSessionToken ? { [ADMIN_SESSION_HEADER]: adminSessionToken } : {}),
         "Content-Type": "application/json",
         ...(init?.headers ?? {}),
       },

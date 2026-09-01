@@ -33,7 +33,7 @@ function isAcceptedImageFile(file: File): boolean {
 }
 
 export async function POST(request: Request): Promise<Response> {
-  const unauthorized = await ensureAdminSession();
+  const unauthorized = await ensureAdminSession(request);
   if (unauthorized) {
     return unauthorized;
   }

@@ -1,6 +1,6 @@
 import "server-only";
 
-import { isAdminAuthenticated } from "./admin-auth";
+import { adminRequestHeaderName, isAdminAuthenticated, validateAdminRequestToken } from "./admin-auth";
 
 const BACKEND_URL =
   process.env.BACKEND_URL ??
@@ -12,8 +12,11 @@ function adminApiToken(): string {
   return process.env.ADMIN_API_TOKEN ?? "";
 }
 
-export async function ensureAdminSession(): Promise<Response | null> {
-  if (!(await isAdminAuthenticated())) {
+export async function ensureAdminSession(request?: Request): Promise<Response | null> {
+  const headerToken = request?.headers.get(adminRequestHeaderName());
+  const headerIsValid = validateAdminRequestToken(headerToken);
+
+  if (!headerIsValid && !(await isAdminAuthenticated())) {
     return Response.json({ detail: "Admin authentication required" }, { status: 401 });
   }
 

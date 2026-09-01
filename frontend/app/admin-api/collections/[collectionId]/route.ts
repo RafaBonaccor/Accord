@@ -7,7 +7,7 @@ type Params = {
 };
 
 export async function PATCH(request: Request, { params }: Params): Promise<Response> {
-  const unauthorized = await ensureAdminSession();
+  const unauthorized = await ensureAdminSession(request);
   if (unauthorized) {
     return unauthorized;
   }
@@ -21,8 +21,8 @@ export async function PATCH(request: Request, { params }: Params): Promise<Respo
   });
 }
 
-export async function DELETE(_request: Request, { params }: Params): Promise<Response> {
-  const unauthorized = await ensureAdminSession();
+export async function DELETE(request: Request, { params }: Params): Promise<Response> {
+  const unauthorized = await ensureAdminSession(request);
   if (unauthorized) {
     return unauthorized;
   }

@@ -5,6 +5,7 @@ import { createHmac, timingSafeEqual } from "crypto";
 import { cookies } from "next/headers";
 
 export const ADMIN_SESSION_COOKIE = "accordi_admin_session";
+const ADMIN_REQUEST_HEADER = "x-admin-session";
 
 const SESSION_TTL_SECONDS = 60 * 60 * 12;
 
@@ -26,6 +27,12 @@ function createSignature(payload: string): string {
 
 function createSessionValue(username: string): string {
   const payload = Buffer.from(JSON.stringify({ role: "admin", username }), "utf8").toString("base64url");
+  return `${payload}.${createSignature(payload)}`;
+}
+
+function createTimedRequestToken(username: string): string {
+  const expiresAt = Math.floor(Date.now() / 1000) + SESSION_TTL_SECONDS;
+  const payload = Buffer.from(JSON.stringify({ role: "admin", username, expiresAt }), "utf8").toString("base64url");
   return `${payload}.${createSignature(payload)}`;
 }
 
@@ -65,6 +72,52 @@ function readSessionValue(value: string | undefined): { role: string; username: 
 
 export function validateAdminCredentials(username: string, password: string): boolean {
   return username === adminUsername() && password === adminPassword();
+}
+
+export function adminRequestHeaderName(): string {
+  return ADMIN_REQUEST_HEADER;
+}
+
+export function createAdminRequestToken(): string {
+  return createTimedRequestToken(adminUsername());
+}
+
+export function validateAdminRequestToken(value: string | null | undefined): boolean {
+  if (!value) {
+    return false;
+  }
+
+  const [payload, signature] = value.split(".");
+  if (!payload || !signature) {
+    return false;
+  }
+
+  const expected = createSignature(payload);
+  const actualBuffer = Buffer.from(signature);
+  const expectedBuffer = Buffer.from(expected);
+  if (
+    actualBuffer.length !== expectedBuffer.length ||
+    !timingSafeEqual(actualBuffer, expectedBuffer)
+  ) {
+    return false;
+  }
+
+  try {
+    const parsed = JSON.parse(Buffer.from(payload, "base64url").toString("utf8")) as {
+      role?: string;
+      username?: string;
+      expiresAt?: number;
+    };
+    if (parsed.role !== "admin" || parsed.username !== adminUsername()) {
+      return false;
+    }
+    if (!parsed.expiresAt || parsed.expiresAt < Math.floor(Date.now() / 1000)) {
+      return false;
+    }
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export async function isAdminAuthenticated(): Promise<boolean> {

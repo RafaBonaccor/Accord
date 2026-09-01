@@ -12,7 +12,7 @@ import {
   getAdminCollections,
   getAdminProducts,
   importAdminProducts,
-  uploadAdminProductImage,
+  setAdminSessionToken,
   updateAdminCollection,
   updateAdminProduct,
 } from "../lib/api";
@@ -71,7 +71,7 @@ function euroInputToCents(value: string): number {
   return Math.round(parsed * 100);
 }
 
-export function AdminDashboard() {
+export function AdminDashboard({ adminSessionToken }: { adminSessionToken: string }) {
   const [activeSection, setActiveSection] = useState<AdminSection>("overview");
   const [products, setProducts] = useState<Product[]>([]);
   const [collections, setCollections] = useState<Collection[]>([]);
@@ -81,7 +81,6 @@ export function AdminDashboard() {
   const [selectedProductId, setSelectedProductId] = useState<number | null>(null);
   const [selectedCollectionId, setSelectedCollectionId] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
-  const [imageUploading, setImageUploading] = useState(false);
   const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
   const [priceInput, setPriceInput] = useState("");
   const [status, setStatus] = useState<string | null>(null);
@@ -162,6 +161,10 @@ export function AdminDashboard() {
   }
 
   useEffect(() => {
+    setAdminSessionToken(adminSessionToken);
+  }, [adminSessionToken]);
+
+  useEffect(() => {
     void loadCatalog();
   }, []);
 
@@ -223,25 +226,6 @@ export function AdminDashboard() {
       showAdminError(saveError);
     } finally {
       setLoading(false);
-    }
-  }
-
-  async function handleImageUpload(file: File | null) {
-    if (!file) {
-      return;
-    }
-
-    setImageUploading(true);
-    setError(null);
-    setStatus(null);
-    try {
-      const uploaded = await uploadAdminProductImage(file);
-      setForm((current) => ({ ...current, image_url: uploaded.image_url }));
-      setStatus("Immagine caricata correttamente e collegata al prodotto.");
-    } catch (uploadError) {
-      showAdminError(uploadError);
-    } finally {
-      setImageUploading(false);
     }
   }
 
@@ -524,11 +508,12 @@ export function AdminDashboard() {
                       onChange={(event) => {
                         const file = event.target.files?.[0] ?? null;
                         setSelectedImageFile(file);
-                        void handleImageUpload(file);
+                        setStatus(file ? `Immagine selezionata: ${file.name}` : null);
+                        setError(null);
                       }}
                     />
                     <small className={styles.fieldHint}>
-                      Seleziona un file dal PC. Al salvataggio prodotto, file e dati viaggiano nella stessa richiesta `multipart/form-data`.
+                      Seleziona un file dal PC. L&apos;immagine verra inviata solo quando salvi il prodotto, nella stessa richiesta `multipart/form-data`.
                     </small>
                   </label>
                   <div className={styles.fieldWide}>
@@ -596,8 +581,8 @@ export function AdminDashboard() {
                   <button type="button" className={styles.primaryButton} onClick={handleSaveProduct} disabled={loading}>
                     {selectedProductId ? "Salva modifiche" : "Crea prodotto"}
                   </button>
-                  <button type="button" className={styles.secondaryButton} disabled={imageUploading}>
-                    {imageUploading ? "Upload immagine..." : "Storage pronto"}
+                  <button type="button" className={styles.secondaryButton} disabled>
+                    {selectedImageFile ? `File pronto: ${selectedImageFile.name}` : "Nessun file selezionato"}
                   </button>
                   <button type="button" className={styles.secondaryButton} onClick={resetProductForm} disabled={loading}>
                     Reset

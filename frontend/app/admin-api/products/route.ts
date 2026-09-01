@@ -1,8 +1,8 @@
 import { ensureAdminSession, proxyAdminRequest } from "../../../lib/admin-api-server";
 import { parseProductMultipartForm } from "../../../lib/admin-product-payload";
 
-export async function GET(): Promise<Response> {
-  const unauthorized = await ensureAdminSession();
+export async function GET(request: Request): Promise<Response> {
+  const unauthorized = await ensureAdminSession(request);
   if (unauthorized) {
     return unauthorized;
   }
@@ -13,7 +13,7 @@ export async function GET(): Promise<Response> {
 }
 
 export async function POST(request: Request): Promise<Response> {
-  const unauthorized = await ensureAdminSession();
+  const unauthorized = await ensureAdminSession(request);
   if (unauthorized) {
     return unauthorized;
   }
