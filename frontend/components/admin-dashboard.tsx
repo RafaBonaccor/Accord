@@ -55,6 +55,22 @@ const productCategoryOptions = [
   { value: "New Arrivals", label: "New arrivals", note: "Drop recenti e capsule appena pubblicate." },
 ];
 
+function centsToEuroInput(value: number): string {
+  return value ? (value / 100).toFixed(2) : "";
+}
+
+function euroInputToCents(value: string): number {
+  const normalized = value.replace(",", ".").trim();
+  if (!normalized) {
+    return 0;
+  }
+  const parsed = Number(normalized);
+  if (!Number.isFinite(parsed) || parsed < 0) {
+    return 0;
+  }
+  return Math.round(parsed * 100);
+}
+
 export function AdminDashboard() {
   const [activeSection, setActiveSection] = useState<AdminSection>("overview");
   const [products, setProducts] = useState<Product[]>([]);
@@ -67,6 +83,7 @@ export function AdminDashboard() {
   const [loading, setLoading] = useState(false);
   const [imageUploading, setImageUploading] = useState(false);
   const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
+  const [priceInput, setPriceInput] = useState("");
   const [status, setStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [popupMessage, setPopupMessage] = useState<string | null>(null);
@@ -152,6 +169,7 @@ export function AdminDashboard() {
     setForm(emptyProduct);
     setSelectedProductId(null);
     setSelectedImageFile(null);
+    setPriceInput("");
   }
 
   function resetCollectionForm() {
@@ -173,6 +191,7 @@ export function AdminDashboard() {
       collection_id: product.collection_id,
       featured: product.featured,
     });
+    setPriceInput(centsToEuroInput(product.price_cents));
     setSelectedImageFile(null);
   }
 
@@ -477,11 +496,17 @@ export function AdminDashboard() {
                     />
                   </label>
                   <label className={styles.field}>
-                    <span>Prezzo in centesimi</span>
+                    <span>Prezzo in euro</span>
                     <input
-                      type="number"
-                      value={form.price_cents}
-                      onChange={(event) => setForm({ ...form, price_cents: Number(event.target.value) })}
+                      type="text"
+                      inputMode="decimal"
+                      placeholder="19.90"
+                      value={priceInput}
+                      onChange={(event) => {
+                        const nextValue = event.target.value;
+                        setPriceInput(nextValue);
+                        setForm({ ...form, price_cents: euroInputToCents(nextValue) });
+                      }}
                     />
                   </label>
                   <label className={styles.fieldWide}>
