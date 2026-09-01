@@ -24,24 +24,24 @@ class ProductListResponse(BaseModel):
 
 class ProductCreate(BaseModel):
     name: str = Field(min_length=2, max_length=120)
-    slug: str = Field(min_length=2, max_length=140)
-    description: str = Field(min_length=8)
+    slug: str = Field(default="", max_length=140)
+    description: str = Field(default="")
     price_cents: int = Field(ge=1)
     image_url: str = Field(default="", max_length=500)
     category: str = Field(min_length=2, max_length=80)
-    material: str = Field(min_length=2, max_length=80)
+    material: str = Field(default="", max_length=80)
     collection_id: int | None = None
     featured: bool = False
 
 
 class ProductUpdate(BaseModel):
     name: str | None = Field(default=None, min_length=2, max_length=120)
-    slug: str | None = Field(default=None, min_length=2, max_length=140)
-    description: str | None = Field(default=None, min_length=8)
+    slug: str | None = Field(default=None, max_length=140)
+    description: str | None = Field(default=None)
     price_cents: int | None = Field(default=None, ge=1)
     image_url: str | None = Field(default=None, max_length=500)
     category: str | None = Field(default=None, min_length=2, max_length=80)
-    material: str | None = Field(default=None, min_length=2, max_length=80)
+    material: str | None = Field(default=None, max_length=80)
     collection_id: int | None = None
     featured: bool | None = None
 

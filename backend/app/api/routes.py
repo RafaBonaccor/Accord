@@ -1,4 +1,5 @@
 import logging
+import re
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Request, Response, UploadFile, status
 from pydantic import ValidationError
@@ -104,6 +105,11 @@ def _parse_optional_int(value: str | None) -> int | None:
     return int(stripped)
 
 
+def _slugify_value(value: str) -> str:
+    slug = re.sub(r"[^a-z0-9]+", "-", value.lower()).strip("-")
+    return slug[:140] or "product"
+
+
 def _ensure_image_source(image_url: str) -> None:
     if image_url:
         return
@@ -142,17 +148,26 @@ async def parse_product_create_payload(request: Request) -> ProductCreate:
     content_type = request.headers.get("content-type", "")
     if "multipart/form-data" not in content_type:
         logger.warning("create product request received as non-multipart content_type=%s", content_type)
-        payload = await request.json()
-        product = ProductCreate.model_validate(payload)
-        logger.warning(
-            "create product json payload parsed: slug=%s has_image_url=%s category=%s featured=%s",
-            product.slug,
-            bool(product.image_url),
-            product.category,
-            product.featured,
-        )
-        _ensure_image_source(product.image_url)
-        return product
+        try:
+            payload = await request.json()
+        except Exception as exc:
+            logger.warning("create product json parse failed")
+            raise HTTPException(status_code=400, detail="Invalid JSON payload") from exc
+
+        try:
+            product = ProductCreate.model_validate(payload)
+            logger.warning(
+                "create product json payload parsed: slug=%s has_image_url=%s category=%s featured=%s",
+                product.slug,
+                bool(product.image_url),
+                product.category,
+                product.featured,
+            )
+            _ensure_image_source(product.image_url)
+            return product
+        except ValidationError as exc:
+            logger.warning("create product json validation failed: errors=%s", exc.errors())
+            raise HTTPException(status_code=422, detail=exc.errors()) from exc
 
     form = await request.form()
     image_url = str(form.get("image_url") or "").strip()
@@ -182,6 +197,8 @@ async def parse_product_create_payload(request: Request) -> ProductCreate:
         "collection_id": _parse_optional_int(str(form.get("collection_id")) if form.get("collection_id") is not None else None),
         "featured": _parse_bool(str(form.get("featured")) if form.get("featured") is not None else None),
     }
+    if not payload["slug"]:
+        payload["slug"] = _slugify_value(payload["name"])
     logger.warning(
         "create product multipart payload parsed: slug=%s has_image_url=%s image_url_length=%s category=%s featured=%s collection_id=%s",
         payload["slug"],
@@ -205,8 +222,17 @@ async def parse_product_update_payload(request: Request) -> ProductUpdate:
     content_type = request.headers.get("content-type", "")
     if "multipart/form-data" not in content_type:
         logger.warning("update product request received as non-multipart content_type=%s", content_type)
-        payload = await request.json()
-        return ProductUpdate.model_validate(payload)
+        try:
+            payload = await request.json()
+        except Exception as exc:
+            logger.warning("update product json parse failed")
+            raise HTTPException(status_code=400, detail="Invalid JSON payload") from exc
+
+        try:
+            return ProductUpdate.model_validate(payload)
+        except ValidationError as exc:
+            logger.warning("update product json validation failed: errors=%s", exc.errors())
+            raise HTTPException(status_code=422, detail=exc.errors()) from exc
 
     form = await request.form()
     file = form.get("file")
@@ -232,6 +258,8 @@ async def parse_product_update_payload(request: Request) -> ProductUpdate:
         raw_value = str(raw)
         parsed_value = parser(raw_value)
         if field_name == "image_url" and parsed_value == "":
+            continue
+        if field_name == "slug" and parsed_value == "":
             continue
         updates[field_name] = parsed_value
 
@@ -402,6 +430,8 @@ def admin_delete_collection(collection_id: int, db: Session = Depends(get_db)) -
 )
 async def admin_create_product(request: Request, db: Session = Depends(get_db)) -> ProductResponse:
     payload = await parse_product_create_payload(request)
+    if not payload.slug:
+        payload = payload.model_copy(update={"slug": _slugify_value(payload.name)})
     ensure_unique_slug(db, payload.slug)
     ensure_valid_collection(db, payload.collection_id)
     product = Product(**payload.model_dump())
