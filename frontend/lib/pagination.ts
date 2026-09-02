@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 
 import { Locale } from "./i18n";
 
-export const CATALOG_PAGE_SIZE = 2;
+export const CATALOG_PAGE_SIZE = 12;
 
 export type PaginatedResult<T> = {
   items: T[];
