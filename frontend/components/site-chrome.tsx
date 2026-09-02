@@ -46,6 +46,8 @@ export function SiteChrome({ children }: Readonly<{ children: React.ReactNode }>
               ACCORDI
             </Link>
             <div className="site-nav-group site-nav-group-right">
+              <Link href={earringsPath}>{copy.navRightCategories[0]}</Link>
+              <Link href={necklacesPath}>{copy.navRightCategories[1]}</Link>
               <Link href={collectionPath}>{copy.navRightCollection}</Link>
               <Link href={privacyPath}>{copy.navRightPrivacy}</Link>
               <Link href={cartPath} className="site-cart-link" aria-label={`${copy.navCart} (${itemCount})`}>

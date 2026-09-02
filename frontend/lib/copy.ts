@@ -3,6 +3,7 @@ import { Locale } from "./i18n";
 type NavCopy = {
   announcement: string;
   navLeft: string[];
+  navRightCategories: string[];
   navRightCollection: string;
   navRightPrivacy: string;
   navCart: string;
@@ -82,6 +83,7 @@ export const navCopy: Record<Locale, NavCopy> = {
   it: {
     announcement: "Spedizione gratuita sopra € 45 · Gift packaging incluso · Resi rapidi",
     navLeft: ["Nuovi arrivi", "Charm", "Bracciali", "Anelli"],
+    navRightCategories: ["Orecchini", "Collane"],
     navRightCollection: "Collezione",
     navRightPrivacy: "Privacy",
     navCart: "Bag",
@@ -110,6 +112,7 @@ export const navCopy: Record<Locale, NavCopy> = {
   en: {
     announcement: "Free shipping over €120 · Gift packaging included · Fast returns",
     navLeft: ["New arrivals", "Charms", "Bracelets", "Rings"],
+    navRightCategories: ["Earrings", "Necklaces"],
     navRightCollection: "Collection",
     navRightPrivacy: "Privacy",
     navCart: "Bag",
