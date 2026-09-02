@@ -120,8 +120,8 @@
 
 .grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 16px;
 }
 
 .card {
@@ -132,7 +132,7 @@
 
 .imageWrap {
   position: relative;
-  aspect-ratio: 4 / 5.1;
+  aspect-ratio: 4 / 4.75;
   background: var(--panel-soft);
 }
 
@@ -152,19 +152,28 @@
 }
 
 .cardBody {
-  padding: 18px;
+  padding: 14px;
 }
 
 .meta {
-  margin: 0 0 8px;
+  margin: 0 0 6px;
   color: var(--muted);
-  font-size: 0.74rem;
+  font-size: 0.68rem;
   letter-spacing: 0.14em;
   text-transform: uppercase;
 }
 
+.cardBody h3 {
+  margin-bottom: 10px;
+  font-size: 1.02rem;
+}
+
+.cardBody p {
+  font-size: 0.9rem;
+}
+
 .price {
-  margin-top: 12px !important;
+  margin-top: 10px !important;
   color: var(--text) !important;
   font-weight: 600;
 }
@@ -233,7 +242,7 @@
 
 @media (max-width: 1080px) {
   .grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 
@@ -241,6 +250,10 @@
   .hero,
   .storyGrid {
     grid-template-columns: 1fr;
+  }
+
+  .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .sectionHeader {

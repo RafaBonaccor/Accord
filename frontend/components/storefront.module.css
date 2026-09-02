@@ -141,8 +141,8 @@
 .featureRow,
 .grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 22px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
 }
 
 .featureCard,
@@ -154,7 +154,7 @@
 
 .featureImageWrap {
   position: relative;
-  aspect-ratio: 4 / 4.8;
+  aspect-ratio: 4 / 4.6;
   background: var(--panel-soft);
 }
 
@@ -167,7 +167,7 @@
 
 .imageWrap {
   position: relative;
-  aspect-ratio: 4 / 5.1;
+  aspect-ratio: 4 / 4.7;
   overflow: hidden;
   background: var(--panel-soft);
 }
@@ -190,27 +190,27 @@
 
 .featureCardBody,
 .cardBody {
-  padding: 22px 22px 24px;
+  padding: 16px 16px 18px;
 }
 
 .featureCardBody h2 {
-  margin-bottom: 12px;
-  font-size: 2rem;
+  margin-bottom: 10px;
+  font-size: 1.55rem;
 }
 
 .cardBody {
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 14px;
 }
 
 .cardBody h3 {
-  font-size: 1.45rem;
+  font-size: 1.12rem;
 }
 
 .meta {
-  margin: 0 0 10px;
-  font-size: 0.76rem;
+  margin: 0 0 8px;
+  font-size: 0.7rem;
   letter-spacing: 0.14em;
   text-transform: uppercase;
 }
@@ -237,21 +237,21 @@
 
 .cardFooter span,
 .totalRow strong {
-  font-size: 1rem;
+  font-size: 0.92rem;
   font-weight: 600;
 }
 
 .cardFooter button,
 .checkoutButton,
 .qtyControls button {
-  min-height: 44px;
-  padding: 0 20px;
+  min-height: 40px;
+  padding: 0 16px;
   cursor: pointer;
   border: 1px solid var(--accent);
   background: var(--accent);
   color: #ffffff;
   font: inherit;
-  font-size: 0.84rem;
+  font-size: 0.76rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
@@ -492,7 +492,7 @@
   .featureRow,
   .grid,
   .seoSection {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .sectionHeader {
@@ -517,6 +517,13 @@
   .cart,
   .cartStandalone {
     padding: 22px 18px;
+  }
+
+  .utilityStrip,
+  .featureRow,
+  .grid,
+  .seoSection {
+    grid-template-columns: 1fr;
   }
 
   .cartItem {
