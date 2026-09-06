@@ -1,7 +1,7 @@
 import logging
 import re
 
-from fastapi import APIRouter, Depends, Header, HTTPException, Request, Response, UploadFile, status
+from fastapi import APIRouter, Depends, Header, HTTPException, Request, Response, status
 from pydantic import ValidationError
 from sqlalchemy.orm import Session
 from stripe.error import SignatureVerificationError
@@ -18,6 +18,7 @@ from app.db.database import (
 )
 from app.models.collection import Collection
 from app.models.product import Product
+from app.models.product_image import ProductImage
 from app.schemas.collection import (
     CollectionCreate,
     CollectionListResponse,
@@ -144,6 +145,48 @@ def _log_multipart_debug(context: str, content_type: str, form: object, file_val
     )
 
 
+def _uploaded_files_from_form(form: object) -> list[object]:
+    files: list[object] = []
+    if hasattr(form, "getlist"):
+        for value in form.getlist("files"):
+            if _looks_like_uploaded_file(value):
+                files.append(value)
+    single_file = form.get("file") if hasattr(form, "get") else None
+    if _looks_like_uploaded_file(single_file):
+        files.insert(0, single_file)
+    return files
+
+
+async def _upload_product_images(files: list[object]) -> list[str]:
+    image_urls: list[str] = []
+    for file in files[:12]:
+        image_url, _ = await upload_product_image(file)
+        image_urls.append(image_url)
+    return image_urls
+
+
+def _normalized_image_urls(*urls: str) -> list[str]:
+    normalized: list[str] = []
+    for url in urls:
+        clean_url = str(url or "").strip()
+        if clean_url and clean_url not in normalized:
+            normalized.append(clean_url)
+    return normalized[:12]
+
+
+def _replace_product_images(db: Session, product: Product, image_urls: list[str]) -> None:
+    db.query(ProductImage).filter(ProductImage.product_id == product.id).delete()
+    for position, image_url in enumerate(image_urls[:12]):
+        db.add(
+            ProductImage(
+                product_id=product.id,
+                image_url=image_url,
+                position=position,
+                is_primary=position == 0,
+            )
+        )
+
+
 async def parse_product_create_payload(request: Request) -> ProductCreate:
     content_type = request.headers.get("content-type", "")
     if "multipart/form-data" not in content_type:
@@ -156,6 +199,8 @@ async def parse_product_create_payload(request: Request) -> ProductCreate:
 
         try:
             product = ProductCreate.model_validate(payload)
+            if not product.image_url and product.image_urls:
+                product = product.model_copy(update={"image_url": product.image_urls[0]})
             logger.warning(
                 "create product json payload parsed: slug=%s has_image_url=%s category=%s featured=%s",
                 product.slug,
@@ -173,9 +218,12 @@ async def parse_product_create_payload(request: Request) -> ProductCreate:
     image_url = str(form.get("image_url") or "").strip()
     file = form.get("file")
     _log_multipart_debug("create_product", content_type, form, file)
-    if _looks_like_uploaded_file(file):
+    uploaded_files = _uploaded_files_from_form(form)
+    uploaded_image_urls: list[str] = []
+    if uploaded_files:
         try:
-            image_url, _ = await upload_product_image(file)
+            uploaded_image_urls = await _upload_product_images(uploaded_files)
+            image_url = uploaded_image_urls[0]
         except (StorageConfigurationError, StorageUploadError) as exc:
             logger.exception("product image upload failed during create")
             raise HTTPException(status_code=503, detail=str(exc)) from exc
@@ -196,6 +244,7 @@ async def parse_product_create_payload(request: Request) -> ProductCreate:
         "material": str(form.get("material") or "").strip(),
         "collection_id": _parse_optional_int(str(form.get("collection_id")) if form.get("collection_id") is not None else None),
         "featured": _parse_bool(str(form.get("featured")) if form.get("featured") is not None else None),
+        "image_urls": _normalized_image_urls(image_url, *uploaded_image_urls),
     }
     if not payload["slug"]:
         payload["slug"] = _slugify_value(payload["name"])
@@ -211,6 +260,8 @@ async def parse_product_create_payload(request: Request) -> ProductCreate:
 
     try:
         product = ProductCreate.model_validate(payload)
+        if not product.image_url and product.image_urls:
+            product = product.model_copy(update={"image_url": product.image_urls[0]})
         _ensure_image_source(product.image_url)
         return product
     except ValidationError as exc:
@@ -229,7 +280,10 @@ async def parse_product_update_payload(request: Request) -> ProductUpdate:
             raise HTTPException(status_code=400, detail="Invalid JSON payload") from exc
 
         try:
-            return ProductUpdate.model_validate(payload)
+            product_update = ProductUpdate.model_validate(payload)
+            if not product_update.image_url and product_update.image_urls:
+                product_update = product_update.model_copy(update={"image_url": product_update.image_urls[0]})
+            return product_update
         except ValidationError as exc:
             logger.warning("update product json validation failed: errors=%s", exc.errors())
             raise HTTPException(status_code=422, detail=exc.errors()) from exc
@@ -263,13 +317,15 @@ async def parse_product_update_payload(request: Request) -> ProductUpdate:
             continue
         updates[field_name] = parsed_value
 
-    if _looks_like_uploaded_file(file):
+    uploaded_files = _uploaded_files_from_form(form)
+    if uploaded_files:
         try:
-            image_url, _ = await upload_product_image(file)
+            image_urls = await _upload_product_images(uploaded_files)
         except (StorageConfigurationError, StorageUploadError) as exc:
             logger.exception("product image upload failed during update")
             raise HTTPException(status_code=503, detail=str(exc)) from exc
-        updates["image_url"] = image_url
+        updates["image_url"] = image_urls[0]
+        updates["image_urls"] = image_urls
     else:
         logger.warning(
             "update product multipart has no recognized uploaded file: raw_file_type=%s raw_file_value=%s",
@@ -434,8 +490,13 @@ async def admin_create_product(request: Request, db: Session = Depends(get_db)) 
         payload = payload.model_copy(update={"slug": _slugify_value(payload.name)})
     ensure_unique_slug(db, payload.slug)
     ensure_valid_collection(db, payload.collection_id)
-    product = Product(**payload.model_dump())
+    image_urls = _normalized_image_urls(payload.image_url, *payload.image_urls)
+    product_data = payload.model_dump(exclude={"image_urls"})
+    product_data["image_url"] = image_urls[0]
+    product = Product(**product_data)
     db.add(product)
+    db.flush()
+    _replace_product_images(db, product, image_urls)
     db.commit()
     db.refresh(product)
     return product
@@ -446,12 +507,18 @@ async def admin_update_product(product_id: int, request: Request, db: Session = 
     payload = await parse_product_update_payload(request)
     product = get_product_or_404(db, product_id)
     updates = payload.model_dump(exclude_unset=True)
+    image_urls = updates.pop("image_urls", None)
     if "slug" in updates:
         ensure_unique_slug(db, updates["slug"], current_product_id=product.id)
     if "collection_id" in updates:
         ensure_valid_collection(db, updates["collection_id"])
     for field, value in updates.items():
         setattr(product, field, value)
+    if image_urls:
+        normalized_urls = _normalized_image_urls(*image_urls)
+        if normalized_urls:
+            product.image_url = normalized_urls[0]
+            _replace_product_images(db, product, normalized_urls)
     db.commit()
     db.refresh(product)
     return product

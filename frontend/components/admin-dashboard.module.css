@@ -238,6 +238,93 @@
   line-height: 1.5;
 }
 
+.editingBanner {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0 0 18px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  background: #ffffff;
+}
+
+.editingBanner span {
+  color: var(--muted);
+  font-size: 0.78rem;
+  letter-spacing: 0.12em;
+}
+
+.editingBanner strong {
+  margin-right: auto;
+}
+
+.textButton {
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.78rem;
+  letter-spacing: 0.1em;
+  text-decoration: underline;
+  text-transform: uppercase;
+}
+
+.imageEditorGrid {
+  display: grid;
+  grid-template-columns: minmax(160px, 220px) minmax(0, 1fr);
+  gap: 16px;
+  align-items: center;
+  margin: 0 0 18px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  background: #ffffff;
+}
+
+.imagePreviewGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.imagePreview {
+  display: grid;
+  width: 100%;
+  aspect-ratio: 1;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  background: #f7f3ef;
+  color: var(--muted);
+  font-size: 0.78rem;
+  text-transform: uppercase;
+}
+
+.imagePreview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.imageEditorCopy {
+  display: grid;
+  gap: 6px;
+}
+
+.imageEditorCopy strong {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.22rem;
+  font-weight: 400;
+  letter-spacing: -0.03em;
+}
+
+.imageEditorCopy small {
+  color: var(--muted);
+  line-height: 1.5;
+}
+
 .categoryBooklet {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -316,6 +403,78 @@
 .table {
   width: 100%;
   border-collapse: collapse;
+}
+
+.productEditList {
+  display: grid;
+  gap: 10px;
+  max-height: 520px;
+  margin: 14px 0 24px;
+  overflow: auto;
+  padding-right: 4px;
+}
+
+.productEditCard,
+.productEditCardActive {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  width: 100%;
+  padding: 10px;
+  border: 1px solid var(--line);
+  background: #ffffff;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+
+.productEditCardActive {
+  border-color: #111111;
+  box-shadow: inset 3px 0 0 #111111;
+}
+
+.productEditThumb {
+  display: grid;
+  width: 72px;
+  aspect-ratio: 1;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  background: #f7f3ef;
+  color: var(--muted);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+}
+
+.productEditThumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.productEditCopy {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.productEditCopy strong,
+.productEditCopy small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.productEditCopy small {
+  color: var(--muted);
+}
+
+.productEditAction {
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
 }
 
 .table th,
@@ -406,11 +565,25 @@
 
 @media (max-width: 720px) {
   .formGrid,
-  .stats {
+  .stats,
+  .imageEditorGrid {
     grid-template-columns: 1fr;
   }
 
   .categoryBooklet {
     grid-template-columns: 1fr;
+  }
+
+  .productEditCard,
+  .productEditCardActive {
+    grid-template-columns: 64px minmax(0, 1fr);
+  }
+
+  .productEditThumb {
+    width: 64px;
+  }
+
+  .productEditAction {
+    display: none;
   }
 }

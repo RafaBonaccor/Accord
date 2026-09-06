@@ -22,6 +22,7 @@ export function relatedProductsFor(product: Product, products: Product[]): Produ
 
 export function productMetadata(locale: Locale, product: Product): Metadata {
   const canonical = productPath(locale, product.slug);
+  const imageUrls = product.images?.length ? product.images.map((image) => image.image_url) : [product.image_url];
   const title =
     locale === "it"
       ? `${product.name} ${categoryLabelForProduct(locale, product)}`
@@ -47,7 +48,7 @@ export function productMetadata(locale: Locale, product: Product): Metadata {
       description,
       type: "website",
       url: absoluteUrl(canonical),
-      images: [{ url: product.image_url, alt: product.name }],
+      images: imageUrls.map((imageUrl) => ({ url: imageUrl, alt: product.name })),
       locale: locale === "it" ? "it_IT" : "en_US",
     },
   };
@@ -57,6 +58,7 @@ export function productStructuredData(locale: Locale, product: Product) {
   const canonical = absoluteUrl(productPath(locale, product.slug));
   const categoryPath = categoryPathForProduct(locale, product);
   const categoryLabel = categoryLabelForProduct(locale, product);
+  const imageUrls = product.images?.length ? product.images.map((image) => image.image_url) : [product.image_url];
 
   return {
     product: {
@@ -64,7 +66,7 @@ export function productStructuredData(locale: Locale, product: Product) {
       "@type": "Product",
       name: product.name,
       description: product.description,
-      image: [product.image_url],
+      image: imageUrls,
       category: categoryLabel,
       material: product.material,
       sku: String(product.id),

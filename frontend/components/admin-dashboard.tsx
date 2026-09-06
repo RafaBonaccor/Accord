@@ -80,8 +80,10 @@ export function AdminDashboard({ adminSessionToken }: { adminSessionToken: strin
   const [jsonInput, setJsonInput] = useState("");
   const [selectedProductId, setSelectedProductId] = useState<number | null>(null);
   const [selectedCollectionId, setSelectedCollectionId] = useState<number | null>(null);
+  const [productSearch, setProductSearch] = useState("");
   const [loading, setLoading] = useState(false);
-  const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
+  const [selectedImageFiles, setSelectedImageFiles] = useState<File[]>([]);
+  const [selectedImagePreviewUrls, setSelectedImagePreviewUrls] = useState<string[]>([]);
   const [priceInput, setPriceInput] = useState("");
   const [status, setStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -92,6 +94,26 @@ export function AdminDashboard({ adminSessionToken }: { adminSessionToken: strin
   const uncategorizedCollectionCount = products.filter((product) => product.collection_id == null).length;
 
   const selectedSection = sectionCopy.find((section) => section.id === activeSection) ?? sectionCopy[0];
+  const selectedProduct = selectedProductId
+    ? products.find((product) => product.id === selectedProductId) ?? null
+    : null;
+  const selectedProductImageUrls =
+    selectedProduct?.images?.map((image) => image.image_url).filter(Boolean) ??
+    (form.image_url ? [form.image_url] : []);
+
+  const filteredProducts = useMemo(() => {
+    const query = productSearch.trim().toLowerCase();
+    if (!query) {
+      return products;
+    }
+
+    return products.filter((product) =>
+      [product.name, product.slug, product.category, product.material, product.collection_name ?? ""]
+        .join(" ")
+        .toLowerCase()
+        .includes(query),
+    );
+  }, [productSearch, products]);
 
   const collectionOptions = useMemo(
     () =>
@@ -168,10 +190,21 @@ export function AdminDashboard({ adminSessionToken }: { adminSessionToken: strin
     void loadCatalog();
   }, []);
 
+  useEffect(() => {
+    if (!selectedImageFiles.length) {
+      setSelectedImagePreviewUrls([]);
+      return;
+    }
+
+    const previewUrls = selectedImageFiles.map((file) => URL.createObjectURL(file));
+    setSelectedImagePreviewUrls(previewUrls);
+    return () => previewUrls.forEach((previewUrl) => URL.revokeObjectURL(previewUrl));
+  }, [selectedImageFiles]);
+
   function resetProductForm() {
     setForm(emptyProduct);
     setSelectedProductId(null);
-    setSelectedImageFile(null);
+    setSelectedImageFiles([]);
     setPriceInput("");
   }
 
@@ -195,7 +228,13 @@ export function AdminDashboard({ adminSessionToken }: { adminSessionToken: strin
       featured: product.featured,
     });
     setPriceInput(centsToEuroInput(product.price_cents));
-    setSelectedImageFile(null);
+    setSelectedImageFiles([]);
+  }
+
+  function replaceSelectedImages(files: File[]) {
+    setSelectedImageFiles(files);
+    setStatus(files.length ? `${files.length} foto selezionate` : null);
+    setError(null);
   }
 
   function fillCollectionForm(collection: Collection) {
@@ -214,10 +253,10 @@ export function AdminDashboard({ adminSessionToken }: { adminSessionToken: strin
     setStatus(null);
     try {
       if (selectedProductId) {
-        await updateAdminProduct(selectedProductId, form, selectedImageFile);
+        await updateAdminProduct(selectedProductId, form, selectedImageFiles);
         setStatus(`Prodotto #${selectedProductId} aggiornato`);
       } else {
-        const created = await createAdminProduct(form, selectedImageFile);
+        const created = await createAdminProduct(form, selectedImageFiles);
         setStatus(`Prodotto creato: #${created.id}`);
       }
       resetProductForm();
@@ -462,7 +501,48 @@ export function AdminDashboard({ adminSessionToken }: { adminSessionToken: strin
             <div className={styles.sectionGrid}>
               <article className={styles.editorCard}>
                 <p className={styles.eyebrow}>Product editor</p>
-                <h3>{selectedProductId ? "Modifica prodotto" : "Crea prodotto"}</h3>
+                <h3>{selectedProductId ? "Modifica annuncio esistente" : "Crea nuovo annuncio"}</h3>
+                {selectedProduct ? (
+                  <div className={styles.editingBanner}>
+                    <span>#{selectedProduct.id}</span>
+                    <strong>{selectedProduct.name}</strong>
+                    <button type="button" className={styles.textButton} onClick={resetProductForm}>
+                      Esci dalla modifica
+                    </button>
+                  </div>
+                ) : null}
+                <div className={styles.imageEditorGrid}>
+                  <div className={styles.imagePreviewGrid}>
+                    {selectedImagePreviewUrls.length ? (
+                      selectedImagePreviewUrls.map((previewUrl, index) => (
+                        <span key={previewUrl} className={styles.imagePreview}>
+                          <img src={previewUrl} alt={`Nuova foto selezionata ${index + 1}`} />
+                        </span>
+                      ))
+                    ) : selectedProductImageUrls.length ? (
+                      selectedProductImageUrls.map((imageUrl, index) => (
+                        <span key={`${imageUrl}-${index}`} className={styles.imagePreview}>
+                          <img src={imageUrl} alt={form.name || `Foto annuncio ${index + 1}`} />
+                        </span>
+                      ))
+                    ) : (
+                      <span className={styles.imagePreview}>Nessuna foto</span>
+                    )}
+                  </div>
+                  <div className={styles.imageEditorCopy}>
+                    <p className={styles.eyebrow}>Gallery annuncio</p>
+                    <strong>
+                      {selectedImageFiles.length
+                        ? `${selectedImageFiles.length} nuove immagini pronte`
+                        : selectedProductImageUrls.length
+                          ? `${selectedProductImageUrls.length} immagini attuali`
+                          : "Da aggiungere"}
+                    </strong>
+                    <small>
+                      Puoi selezionare piu foto insieme. La prima diventera la foto principale nelle card.
+                    </small>
+                  </div>
+                </div>
                 <div className={styles.formGrid}>
                   <label className={styles.field}>
                     <span>Nome</span>
@@ -501,19 +581,19 @@ export function AdminDashboard({ adminSessionToken }: { adminSessionToken: strin
                     />
                   </label>
                   <label className={styles.fieldWide}>
-                    <span>Carica immagine dal PC</span>
+                    <span>{selectedProductId ? "Sostituisci gallery dal PC" : "Carica immagini dal PC"}</span>
                     <input
                       type="file"
                       accept="image/*"
+                      multiple
                       onChange={(event) => {
-                        const file = event.target.files?.[0] ?? null;
-                        setSelectedImageFile(file);
-                        setStatus(file ? `Immagine selezionata: ${file.name}` : null);
-                        setError(null);
+                        const files = Array.from(event.target.files ?? []);
+                        replaceSelectedImages(files);
                       }}
                     />
                     <small className={styles.fieldHint}>
-                      Seleziona un file dal PC. L&apos;immagine verra inviata solo quando salvi il prodotto, nella stessa richiesta `multipart/form-data`.
+                      Seleziona una o piu immagini. Verranno inviate solo quando salvi il prodotto, nella stessa
+                      richiesta `multipart/form-data`.
                     </small>
                   </label>
                   <div className={styles.fieldWide}>
@@ -579,10 +659,10 @@ export function AdminDashboard({ adminSessionToken }: { adminSessionToken: strin
                 </div>
                 <div className={styles.actions}>
                   <button type="button" className={styles.primaryButton} onClick={handleSaveProduct} disabled={loading}>
-                    {selectedProductId ? "Salva modifiche" : "Crea prodotto"}
+                    {selectedProductId ? "Aggiorna annuncio" : "Crea annuncio"}
                   </button>
                   <button type="button" className={styles.secondaryButton} disabled>
-                    {selectedImageFile ? `File pronto: ${selectedImageFile.name}` : "Nessun file selezionato"}
+                    {selectedImageFiles.length ? `${selectedImageFiles.length} file pronti` : "Nessun file selezionato"}
                   </button>
                   <button type="button" className={styles.secondaryButton} onClick={resetProductForm} disabled={loading}>
                     Reset
@@ -591,8 +671,40 @@ export function AdminDashboard({ adminSessionToken }: { adminSessionToken: strin
               </article>
 
               <article className={styles.tableWrap}>
-                <p className={styles.eyebrow}>Catalogo</p>
-                <h3>Prodotti pubblicati</h3>
+                <p className={styles.eyebrow}>Annunci esistenti</p>
+                <h3>Modifica catalogo</h3>
+                <label className={styles.fieldWide}>
+                  <span>Cerca annuncio</span>
+                  <input
+                    value={productSearch}
+                    onChange={(event) => setProductSearch(event.target.value)}
+                    placeholder="Nome, slug, categoria o collection"
+                  />
+                </label>
+                <div className={styles.productEditList}>
+                  {filteredProducts.map((product) => (
+                    <button
+                      key={product.id}
+                      type="button"
+                      className={
+                        selectedProductId === product.id ? styles.productEditCardActive : styles.productEditCard
+                      }
+                      onClick={() => fillForm(product)}
+                    >
+                      <span className={styles.productEditThumb}>
+                        {product.image_url ? <img src={product.image_url} alt="" /> : <span>No foto</span>}
+                      </span>
+                      <span className={styles.productEditCopy}>
+                        <strong>{product.name}</strong>
+                        <small>
+                          {product.category || "Senza categoria"} · € {(product.price_cents / 100).toFixed(2)}
+                        </small>
+                        <small>{product.collection_name ?? "Nessuna collection"}</small>
+                      </span>
+                      <span className={styles.productEditAction}>Modifica</span>
+                    </button>
+                  ))}
+                </div>
                 <table className={styles.table}>
                   <thead>
                     <tr>

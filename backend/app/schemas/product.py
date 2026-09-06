@@ -1,6 +1,13 @@
 from pydantic import BaseModel, ConfigDict, Field
 
 
+class ProductImageResponse(BaseModel):
+    id: int | None = None
+    image_url: str
+    position: int
+    is_primary: bool
+
+
 class ProductResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -16,6 +23,7 @@ class ProductResponse(BaseModel):
     collection_name: str | None
     collection_slug: str | None
     featured: bool
+    images: list[ProductImageResponse] = Field(default_factory=list)
 
 
 class ProductListResponse(BaseModel):
@@ -32,6 +40,7 @@ class ProductCreate(BaseModel):
     material: str = Field(default="", max_length=80)
     collection_id: int | None = None
     featured: bool = False
+    image_urls: list[str] = Field(default_factory=list, max_length=12)
 
 
 class ProductUpdate(BaseModel):
@@ -44,6 +53,7 @@ class ProductUpdate(BaseModel):
     material: str | None = Field(default=None, max_length=80)
     collection_id: int | None = None
     featured: bool | None = None
+    image_urls: list[str] | None = Field(default=None, max_length=12)
 
 
 class ProductImportRequest(BaseModel):

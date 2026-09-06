@@ -30,6 +30,11 @@
   align-items: start;
 }
 
+.gallery {
+  display: grid;
+  gap: 1rem;
+}
+
 .imagePanel {
   position: relative;
   min-height: 620px;
@@ -42,6 +47,20 @@
 
 .image {
   object-fit: cover;
+}
+
+.thumbnailGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
+.thumbnail {
+  position: relative;
+  min-height: 150px;
+  overflow: hidden;
+  border-radius: 1.1rem;
+  background: linear-gradient(145deg, #f7ecde, #ebd8c2);
 }
 
 .copy {
@@ -292,6 +311,10 @@
     min-height: 480px;
   }
 
+  .thumbnailGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
   .reviewsGrid,
   .relatedGrid {
     grid-template-columns: 1fr;
@@ -309,5 +332,13 @@
 
   .imagePanel {
     min-height: 360px;
+  }
+
+  .thumbnailGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .thumbnail {
+    min-height: 130px;
   }
 }

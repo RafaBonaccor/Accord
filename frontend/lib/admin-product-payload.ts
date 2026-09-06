@@ -28,11 +28,23 @@ function parseBoolean(formData: FormData, field: "featured"): boolean {
 
 export async function parseProductMultipartForm(formData: FormData): Promise<ProductInput> {
   const file = formData.get("file");
+  const galleryFiles = formData.getAll("files").filter((value): value is File => value instanceof File && value.size > 0);
   let imageUrl = parseRequiredString(formData, "image_url");
+  const imageUrls: string[] = [];
 
   if (file instanceof File && file.size > 0) {
     const uploaded = await uploadProductImage(file);
     imageUrl = uploaded.imageUrl;
+    imageUrls.push(uploaded.imageUrl);
+  }
+
+  for (const galleryFile of galleryFiles.slice(0, 12)) {
+    const uploaded = await uploadProductImage(galleryFile);
+    imageUrls.push(uploaded.imageUrl);
+  }
+
+  if (!imageUrl && imageUrls.length) {
+    imageUrl = imageUrls[0];
   }
 
   return {
@@ -45,5 +57,6 @@ export async function parseProductMultipartForm(formData: FormData): Promise<Pro
     material: parseRequiredString(formData, "material"),
     collection_id: parseNullableInteger(formData, "collection_id"),
     featured: parseBoolean(formData, "featured"),
+    image_urls: imageUrls,
   };
 }

@@ -34,6 +34,12 @@ class Product(Base):
     )
 
     collection = relationship("Collection", back_populates="products")
+    product_images = relationship(
+        "ProductImage",
+        back_populates="product",
+        cascade="all, delete-orphan",
+        order_by="ProductImage.position",
+    )
 
     @property
     def collection_name(self) -> str | None:
@@ -42,3 +48,25 @@ class Product(Base):
     @property
     def collection_slug(self) -> str | None:
         return self.collection.slug if self.collection else None
+
+    @property
+    def images(self) -> list[dict[str, object]]:
+        if self.product_images:
+            return [
+                {
+                    "id": image.id,
+                    "image_url": image.image_url,
+                    "position": image.position,
+                    "is_primary": image.is_primary,
+                }
+                for image in self.product_images
+            ]
+
+        return [
+            {
+                "id": None,
+                "image_url": self.image_url,
+                "position": 0,
+                "is_primary": True,
+            }
+        ]

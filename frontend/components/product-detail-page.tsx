@@ -105,6 +105,9 @@ export function ProductDetailPage({ locale, product, relatedProducts }: Props) {
   const categoryLabel = categoryLabelForProduct(locale, product);
   const homePath = locale === "en" ? "/en" : "/";
   const reviews = productReviews(locale, product);
+  const galleryImages = product.images?.length
+    ? product.images
+    : [{ id: null, image_url: product.image_url, position: 0, is_primary: true }];
 
   return (
     <main className={styles.page}>
@@ -117,15 +120,33 @@ export function ProductDetailPage({ locale, product, relatedProducts }: Props) {
       </nav>
 
       <section className={styles.hero}>
-        <div className={styles.imagePanel}>
-          <Image
-            src={product.image_url}
-            alt={product.name}
-            fill
-            priority
-            sizes="(max-width: 980px) 100vw, 55vw"
-            className={styles.image}
-          />
+        <div className={styles.gallery}>
+          <div className={styles.imagePanel}>
+            <Image
+              src={galleryImages[0].image_url}
+              alt={product.name}
+              fill
+              priority
+              sizes="(max-width: 980px) 100vw, 55vw"
+              className={styles.image}
+            />
+          </div>
+
+          {galleryImages.length > 1 ? (
+            <div className={styles.thumbnailGrid} aria-label="Product images">
+              {galleryImages.slice(1).map((image, index) => (
+                <div key={`${image.image_url}-${index}`} className={styles.thumbnail}>
+                  <Image
+                    src={image.image_url}
+                    alt={`${product.name} detail ${index + 2}`}
+                    fill
+                    sizes="(max-width: 980px) 33vw, 14vw"
+                    className={styles.image}
+                  />
+                </div>
+              ))}
+            </div>
+          ) : null}
         </div>
 
         <div className={styles.copy}>

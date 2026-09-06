@@ -112,7 +112,7 @@ async function adminRequest<T>(path: string, init?: RequestInit): Promise<T> {
   return (await response.json()) as T;
 }
 
-function buildProductFormData(payload: ProductInput, file?: File | null): FormData {
+function buildProductFormData(payload: ProductInput, files?: File[] | File | null): FormData {
   const formData = new FormData();
   formData.append("name", payload.name);
   formData.append("slug", payload.slug);
@@ -123,8 +123,9 @@ function buildProductFormData(payload: ProductInput, file?: File | null): FormDa
   formData.append("material", payload.material);
   formData.append("collection_id", payload.collection_id == null ? "" : String(payload.collection_id));
   formData.append("featured", payload.featured ? "true" : "false");
-  if (file) {
-    formData.append("file", file);
+  const imageFiles = Array.isArray(files) ? files : files ? [files] : [];
+  for (const file of imageFiles) {
+    formData.append("files", file);
   }
   return formData;
 }
@@ -136,21 +137,23 @@ export async function getAdminProducts(): Promise<Product[]> {
   return data.items;
 }
 
-export async function createAdminProduct(payload: ProductInput, file?: File | null): Promise<Product> {
-  const isMultipart = !!file;
+export async function createAdminProduct(payload: ProductInput, files?: File[] | File | null): Promise<Product> {
+  const imageFiles = Array.isArray(files) ? files : files ? [files] : [];
+  const isMultipart = imageFiles.length > 0;
   return adminRequest<Product>("/products", {
     method: "POST",
     headers: isMultipart ? undefined : { "Content-Type": "application/json" },
-    body: isMultipart ? buildProductFormData(payload, file) : JSON.stringify(payload),
+    body: isMultipart ? buildProductFormData(payload, imageFiles) : JSON.stringify(payload),
   });
 }
 
 export async function updateAdminProduct(
   productId: number,
   payload: Partial<ProductInput>,
-  file?: File | null,
+  files?: File[] | File | null,
 ): Promise<Product> {
-  const isMultipart = !!file;
+  const imageFiles = Array.isArray(files) ? files : files ? [files] : [];
+  const isMultipart = imageFiles.length > 0;
   const multipartPayload: ProductInput = {
     name: payload.name ?? "",
     slug: payload.slug ?? "",
@@ -165,7 +168,7 @@ export async function updateAdminProduct(
   return adminRequest<Product>(`/products/${productId}`, {
     method: "PATCH",
     headers: isMultipart ? undefined : { "Content-Type": "application/json" },
-    body: isMultipart ? buildProductFormData(multipartPayload, file) : JSON.stringify(payload),
+    body: isMultipart ? buildProductFormData(multipartPayload, imageFiles) : JSON.stringify(payload),
   });
 }
 

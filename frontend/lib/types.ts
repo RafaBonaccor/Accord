@@ -1,3 +1,10 @@
+export type ProductImage = {
+  id: number | null;
+  image_url: string;
+  position: number;
+  is_primary: boolean;
+};
+
 export type Product = {
   id: number;
   name: string;
@@ -11,6 +18,7 @@ export type Product = {
   collection_name: string | null;
   collection_slug: string | null;
   featured: boolean;
+  images: ProductImage[];
 };
 
 export type ProductInput = {
@@ -23,6 +31,7 @@ export type ProductInput = {
   material: string;
   collection_id: number | null;
   featured: boolean;
+  image_urls?: string[];
 };
 
 export type Collection = {
