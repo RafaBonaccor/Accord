@@ -166,10 +166,14 @@ export function AdminDashboard({ adminSessionToken }: { adminSessionToken: strin
         return "Sessione admin non valida o scaduta. Effettua di nuovo il login.";
       }
       if (error.status === 404) {
-        return `Elemento non trovato. Dettaglio: ${error.detail ?? "verifica prodotto o collezione selezionata."}`;
+        return `Elemento non trovato o gia eliminato. Dettaglio: ${
+          error.detail ?? "aggiorna il catalogo e riprova."
+        }`;
       }
       if (error.status === 409) {
-        return `Conflitto dati: ${error.detail ?? "slug gia presente o contenuto duplicato."}`;
+        return `Conflitto dati: ${
+          error.detail ?? "slug gia presente, contenuto duplicato o prodotto collegato a un ordine."
+        }`;
       }
       if (error.status === 422) {
         return "Dati non validi. Controlla nome, slug, descrizione, prezzo, immagine, categoria, materiale e collezione.";
@@ -330,6 +334,10 @@ export function AdminDashboard({ adminSessionToken }: { adminSessionToken: strin
   }
 
   async function handleDeleteProduct(productId: number) {
+    const productName = products.find((product) => product.id === productId)?.name ?? `#${productId}`;
+    if (!window.confirm(`Eliminare definitivamente "${productName}"?`)) {
+      return;
+    }
     setLoading(true);
     setError(null);
     setStatus(null);
@@ -341,6 +349,10 @@ export function AdminDashboard({ adminSessionToken }: { adminSessionToken: strin
       }
       await loadCatalog();
     } catch (deleteError) {
+      if (deleteError instanceof ApiRequestError && deleteError.status === 404) {
+        resetProductForm();
+        await loadCatalog();
+      }
       showAdminError(deleteError);
     } finally {
       setLoading(false);
@@ -788,6 +800,16 @@ export function AdminDashboard({ adminSessionToken }: { adminSessionToken: strin
                   <button type="button" className={styles.secondaryButton} onClick={resetProductForm} disabled={loading}>
                     Reset
                   </button>
+                  {selectedProductId ? (
+                    <button
+                      type="button"
+                      className={styles.dangerButton}
+                      onClick={() => handleDeleteProduct(selectedProductId)}
+                      disabled={loading}
+                    >
+                      Elimina annuncio
+                    </button>
+                  ) : null}
                 </div>
               </article>
 

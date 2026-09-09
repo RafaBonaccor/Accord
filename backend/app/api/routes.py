@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Request, Response, status
 from pydantic import ValidationError
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from stripe.error import SignatureVerificationError
 import stripe
@@ -581,8 +582,16 @@ async def admin_update_product(product_id: int, request: Request, db: Session = 
 @router.delete("/admin/products/{product_id}", status_code=status.HTTP_204_NO_CONTENT, dependencies=[Depends(require_admin)])
 def admin_delete_product(product_id: int, db: Session = Depends(get_db)) -> Response:
     product = get_product_or_404(db, product_id)
-    db.delete(product)
-    db.commit()
+    try:
+        db.query(ProductImage).filter(ProductImage.product_id == product.id).delete()
+        db.delete(product)
+        db.commit()
+    except IntegrityError as exc:
+        db.rollback()
+        raise HTTPException(
+            status_code=409,
+            detail="Product cannot be deleted because it is linked to one or more orders.",
+        ) from exc
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
