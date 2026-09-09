@@ -6,6 +6,7 @@ from sqlalchemy.orm import sessionmaker
 from app.core.config import settings
 from app.db.base import Base
 from app.models.collection import Collection
+from app.models.discount_code import DiscountCode
 from app.models.order import Order
 from app.models.order_item import OrderItem
 from app.models.product import Product
@@ -82,6 +83,18 @@ def seed_products() -> None:
         db.close()
 
 
+def seed_discount_codes() -> None:
+    db = SessionLocal()
+    try:
+        existing = db.query(DiscountCode).filter(DiscountCode.code == "4CCORD1").first()
+        if existing:
+            return
+        db.add(DiscountCode(code="4CCORD1", percent_off=10, active=True))
+        db.commit()
+    finally:
+        db.close()
+
+
 def ensure_schema_extensions() -> None:
     inspector = inspect(engine)
     tables = inspector.get_table_names()
@@ -110,9 +123,32 @@ def ensure_schema_extensions() -> None:
         "shipping_postal_code": "VARCHAR(40)",
         "shipping_country": "VARCHAR(8)",
         "paid_at": timestamp_type,
+        "discount_code": "VARCHAR(80)",
+        "discount_percent_off": "INTEGER",
+        "discount_amount_cents": "INTEGER NOT NULL DEFAULT 0",
     }
 
     with engine.begin() as connection:
+        if "discount_codes" not in tables:
+            connection.execute(
+                text(
+                    f"""
+                    CREATE TABLE discount_codes (
+                        id {identity_primary_key},
+                        code VARCHAR(80) NOT NULL UNIQUE,
+                        percent_off INTEGER NOT NULL,
+                        active BOOLEAN NOT NULL DEFAULT TRUE,
+                        max_redemptions INTEGER,
+                        redeemed_count INTEGER NOT NULL DEFAULT 0,
+                        starts_at {timestamp_type},
+                        expires_at {timestamp_type},
+                        created_at {timestamp_type} NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                        updated_at {timestamp_type} NOT NULL DEFAULT CURRENT_TIMESTAMP
+                    )
+                    """
+                )
+            )
+            connection.execute(text("CREATE INDEX idx_discount_codes_code ON discount_codes (code)"))
         if "product_images" not in tables:
             connection.execute(
                 text(
@@ -138,7 +174,16 @@ def ensure_schema_extensions() -> None:
             connection.execute(text(f"ALTER TABLE products ADD COLUMN collection_id {bigint_type}"))
 
 
-def create_order_record(*, email: str, currency: str, items: list[dict], total_amount_cents: int) -> Order:
+def create_order_record(
+    *,
+    email: str,
+    currency: str,
+    items: list[dict],
+    total_amount_cents: int,
+    discount_code: str | None = None,
+    discount_percent_off: int | None = None,
+    discount_amount_cents: int = 0,
+) -> Order:
     db = SessionLocal()
     try:
         order = Order(
@@ -146,6 +191,9 @@ def create_order_record(*, email: str, currency: str, items: list[dict], total_a
             status="pending",
             total_amount_cents=total_amount_cents,
             currency=currency,
+            discount_code=discount_code,
+            discount_percent_off=discount_percent_off,
+            discount_amount_cents=discount_amount_cents,
         )
         db.add(order)
         db.flush()
@@ -202,6 +250,7 @@ def mark_order_paid_from_checkout(
         order = db.query(Order).filter(Order.id == order_id).first()
         if not order:
             return
+        was_already_paid = order.status == "paid"
         order.status = "paid"
         order.stripe_session_id = stripe_session_id or order.stripe_session_id
         order.stripe_payment_intent_id = stripe_payment_intent_id
@@ -216,6 +265,10 @@ def mark_order_paid_from_checkout(
         order.shipping_postal_code = shipping_postal_code
         order.shipping_country = shipping_country
         order.paid_at = datetime.now(timezone.utc)
+        if order.discount_code and not was_already_paid:
+            discount = db.query(DiscountCode).filter(DiscountCode.code == order.discount_code).first()
+            if discount:
+                discount.redeemed_count += 1
         db.commit()
     finally:
         db.close()

@@ -6,25 +6,37 @@ import { useEffect, useMemo, useState } from "react";
 import {
   ApiRequestError,
   createAdminCollection,
+  createAdminDiscountCode,
   createAdminProduct,
   deleteAdminCollection,
+  deleteAdminDiscountCode,
   deleteAdminProduct,
   getAdminCollections,
+  getAdminDiscountCodes,
   getAdminProducts,
   importAdminProducts,
   setAdminSessionToken,
   updateAdminCollection,
+  updateAdminDiscountCode,
   updateAdminProduct,
 } from "../lib/api";
-import { Collection, CollectionInput, Product, ProductInput } from "../lib/types";
+import {
+  Collection,
+  CollectionInput,
+  DiscountCode,
+  DiscountCodeInput,
+  Product,
+  ProductInput,
+} from "../lib/types";
 import styles from "./admin-dashboard.module.css";
 
-type AdminSection = "overview" | "products" | "collections" | "import";
+type AdminSection = "overview" | "products" | "collections" | "discounts" | "import";
 
 const sectionCopy: Array<{ id: AdminSection; label: string; body: string }> = [
   { id: "overview", label: "Overview", body: "KPI rapidi, stato catalogo e accesso alle azioni principali." },
   { id: "products", label: "Products", body: "Schede prodotto, assegnazione collezione e pubblicazione." },
   { id: "collections", label: "Collections", body: "Crea collezioni dedicate e abbinale ai prodotti dal menu a libretto." },
+  { id: "discounts", label: "Discounts", body: "Codici sconto per checkout, campagne e clienti selezionati." },
   { id: "import", label: "Import", body: "Caricamento massivo da JSON per collezioni capsule o stagionali." },
 ];
 
@@ -44,6 +56,15 @@ const emptyCollection: CollectionInput = {
   name: "",
   slug: "",
   description: "",
+};
+
+const emptyDiscountCode: DiscountCodeInput = {
+  code: "",
+  percent_off: 10,
+  active: true,
+  max_redemptions: null,
+  starts_at: null,
+  expires_at: null,
 };
 
 const productCategoryOptions = [
@@ -71,15 +92,29 @@ function euroInputToCents(value: string): number {
   return Math.round(parsed * 100);
 }
 
+function toDatetimeLocalValue(value: string | null): string {
+  if (!value) {
+    return "";
+  }
+  return value.slice(0, 16);
+}
+
+function fromDatetimeLocalValue(value: string): string | null {
+  return value ? new Date(value).toISOString() : null;
+}
+
 export function AdminDashboard({ adminSessionToken }: { adminSessionToken: string }) {
   const [activeSection, setActiveSection] = useState<AdminSection>("overview");
   const [products, setProducts] = useState<Product[]>([]);
   const [collections, setCollections] = useState<Collection[]>([]);
+  const [discountCodes, setDiscountCodes] = useState<DiscountCode[]>([]);
   const [form, setForm] = useState<ProductInput>(emptyProduct);
   const [collectionForm, setCollectionForm] = useState<CollectionInput>(emptyCollection);
+  const [discountForm, setDiscountForm] = useState<DiscountCodeInput>(emptyDiscountCode);
   const [jsonInput, setJsonInput] = useState("");
   const [selectedProductId, setSelectedProductId] = useState<number | null>(null);
   const [selectedCollectionId, setSelectedCollectionId] = useState<number | null>(null);
+  const [selectedDiscountId, setSelectedDiscountId] = useState<number | null>(null);
   const [productSearch, setProductSearch] = useState("");
   const [loading, setLoading] = useState(false);
   const [selectedImageFiles, setSelectedImageFiles] = useState<File[]>([]);
@@ -92,6 +127,7 @@ export function AdminDashboard({ adminSessionToken }: { adminSessionToken: strin
   const featuredCount = products.filter((product) => product.featured).length;
   const categoriesCount = new Set(products.map((product) => product.category)).size;
   const uncategorizedCollectionCount = products.filter((product) => product.collection_id == null).length;
+  const activeDiscountCount = discountCodes.filter((discount) => discount.active).length;
 
   const selectedSection = sectionCopy.find((section) => section.id === activeSection) ?? sectionCopy[0];
   const selectedProduct = selectedProductId
@@ -171,10 +207,17 @@ export function AdminDashboard({ adminSessionToken }: { adminSessionToken: strin
     setLoading(true);
     setError(null);
     try {
-      const [loadedProducts, loadedCollections] = await Promise.all([getAdminProducts(), getAdminCollections()]);
+      const [loadedProducts, loadedCollections, loadedDiscountCodes] = await Promise.all([
+        getAdminProducts(),
+        getAdminCollections(),
+        getAdminDiscountCodes(),
+      ]);
       setProducts(loadedProducts);
       setCollections(loadedCollections);
-      setStatus(`Catalogo sincronizzato: ${loadedProducts.length} prodotti, ${loadedCollections.length} collezioni.`);
+      setDiscountCodes(loadedDiscountCodes);
+      setStatus(
+        `Catalogo sincronizzato: ${loadedProducts.length} prodotti, ${loadedCollections.length} collezioni, ${loadedDiscountCodes.length} sconti.`,
+      );
     } catch (loadError) {
       showAdminError(loadError);
     } finally {
@@ -213,6 +256,11 @@ export function AdminDashboard({ adminSessionToken }: { adminSessionToken: strin
     setSelectedCollectionId(null);
   }
 
+  function resetDiscountForm() {
+    setDiscountForm(emptyDiscountCode);
+    setSelectedDiscountId(null);
+  }
+
   function fillForm(product: Product) {
     setActiveSection("products");
     setSelectedProductId(product.id);
@@ -244,6 +292,19 @@ export function AdminDashboard({ adminSessionToken }: { adminSessionToken: strin
       name: collection.name,
       slug: collection.slug,
       description: collection.description ?? "",
+    });
+  }
+
+  function fillDiscountForm(discount: DiscountCode) {
+    setActiveSection("discounts");
+    setSelectedDiscountId(discount.id);
+    setDiscountForm({
+      code: discount.code,
+      percent_off: discount.percent_off,
+      active: discount.active,
+      max_redemptions: discount.max_redemptions,
+      starts_at: discount.starts_at,
+      expires_at: discount.expires_at,
     });
   }
 
@@ -316,6 +377,51 @@ export function AdminDashboard({ adminSessionToken }: { adminSessionToken: strin
       setStatus(`Collezione eliminata: #${collectionId}`);
       if (selectedCollectionId === collectionId) {
         resetCollectionForm();
+      }
+      await loadCatalog();
+    } catch (deleteError) {
+      showAdminError(deleteError);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleSaveDiscountCode() {
+    setLoading(true);
+    setError(null);
+    setStatus(null);
+    try {
+      const payload = {
+        ...discountForm,
+        code: discountForm.code.trim().toUpperCase(),
+        starts_at: discountForm.starts_at || null,
+        expires_at: discountForm.expires_at || null,
+      };
+      if (selectedDiscountId) {
+        await updateAdminDiscountCode(selectedDiscountId, payload);
+        setStatus(`Codice sconto #${selectedDiscountId} aggiornato`);
+      } else {
+        const created = await createAdminDiscountCode(payload);
+        setStatus(`Codice sconto creato: ${created.code}`);
+      }
+      resetDiscountForm();
+      await loadCatalog();
+    } catch (saveError) {
+      showAdminError(saveError);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleDeleteDiscountCode(discountId: number) {
+    setLoading(true);
+    setError(null);
+    setStatus(null);
+    try {
+      await deleteAdminDiscountCode(discountId);
+      setStatus(`Codice sconto eliminato: #${discountId}`);
+      if (selectedDiscountId === discountId) {
+        resetDiscountForm();
       }
       await loadCatalog();
     } catch (deleteError) {
@@ -427,6 +533,17 @@ export function AdminDashboard({ adminSessionToken }: { adminSessionToken: strin
             >
               Nuova collection
             </button>
+            <button
+              type="button"
+              className={styles.secondaryButton}
+              onClick={() => {
+                resetDiscountForm();
+                setActiveSection("discounts");
+              }}
+              disabled={loading}
+            >
+              Nuovo sconto
+            </button>
             <Link href="/admin/logout" className={styles.secondaryButton}>
               Logout
             </Link>
@@ -465,6 +582,10 @@ export function AdminDashboard({ adminSessionToken }: { adminSessionToken: strin
             <article className={styles.statsCard}>
               <p className={styles.eyebrow}>Senza collection</p>
               <strong>{uncategorizedCollectionCount}</strong>
+            </article>
+            <article className={styles.statsCard}>
+              <p className={styles.eyebrow}>Sconti attivi</p>
+              <strong>{activeDiscountCount}</strong>
             </article>
           </div>
 
@@ -832,6 +953,130 @@ export function AdminDashboard({ adminSessionToken }: { adminSessionToken: strin
                       disabled={loading}
                     >
                       Elimina collection
+                    </button>
+                  </div>
+                ) : null}
+              </article>
+            </div>
+          ) : null}
+
+          {activeSection === "discounts" ? (
+            <div className={styles.sectionGrid}>
+              <article className={styles.editorCard}>
+                <p className={styles.eyebrow}>Discount editor</p>
+                <h3>{selectedDiscountId ? "Modifica codice sconto" : "Crea codice sconto"}</h3>
+                <div className={styles.formGrid}>
+                  <label className={styles.field}>
+                    <span>Codice</span>
+                    <input
+                      value={discountForm.code}
+                      onChange={(event) => setDiscountForm({ ...discountForm, code: event.target.value })}
+                      placeholder="4CCORD1"
+                    />
+                  </label>
+                  <label className={styles.field}>
+                    <span>Sconto percentuale</span>
+                    <input
+                      type="number"
+                      min="1"
+                      max="100"
+                      value={discountForm.percent_off}
+                      onChange={(event) =>
+                        setDiscountForm({ ...discountForm, percent_off: Number(event.target.value) })
+                      }
+                    />
+                  </label>
+                  <label className={styles.field}>
+                    <span>Limite utilizzi</span>
+                    <input
+                      type="number"
+                      min="1"
+                      value={discountForm.max_redemptions ?? ""}
+                      onChange={(event) =>
+                        setDiscountForm({
+                          ...discountForm,
+                          max_redemptions: event.target.value ? Number(event.target.value) : null,
+                        })
+                      }
+                      placeholder="Illimitato"
+                    />
+                  </label>
+                  <label className={styles.checkboxRow}>
+                    <input
+                      type="checkbox"
+                      checked={discountForm.active}
+                      onChange={(event) => setDiscountForm({ ...discountForm, active: event.target.checked })}
+                    />
+                    <span>Attivo</span>
+                  </label>
+                  <label className={styles.field}>
+                    <span>Valido da</span>
+                    <input
+                      type="datetime-local"
+                      value={toDatetimeLocalValue(discountForm.starts_at)}
+                      onChange={(event) =>
+                        setDiscountForm({ ...discountForm, starts_at: fromDatetimeLocalValue(event.target.value) })
+                      }
+                    />
+                  </label>
+                  <label className={styles.field}>
+                    <span>Scade il</span>
+                    <input
+                      type="datetime-local"
+                      value={toDatetimeLocalValue(discountForm.expires_at)}
+                      onChange={(event) =>
+                        setDiscountForm({ ...discountForm, expires_at: fromDatetimeLocalValue(event.target.value) })
+                      }
+                    />
+                  </label>
+                </div>
+                <div className={styles.actions}>
+                  <button
+                    type="button"
+                    className={styles.primaryButton}
+                    onClick={handleSaveDiscountCode}
+                    disabled={loading}
+                  >
+                    {selectedDiscountId ? "Salva sconto" : "Crea sconto"}
+                  </button>
+                  <button type="button" className={styles.secondaryButton} onClick={resetDiscountForm} disabled={loading}>
+                    Reset
+                  </button>
+                </div>
+              </article>
+
+              <article className={styles.tableWrap}>
+                <p className={styles.eyebrow}>Codici sconto</p>
+                <h3>Campagne checkout</h3>
+                <div className={styles.collectionList}>
+                  {discountCodes.map((discount) => (
+                    <button
+                      key={discount.id}
+                      type="button"
+                      className={styles.collectionCard}
+                      onClick={() => fillDiscountForm(discount)}
+                    >
+                      <span>
+                        <strong>{discount.code}</strong>
+                        <small>
+                          {discount.percent_off}% · {discount.active ? "Attivo" : "Non attivo"} · usato{" "}
+                          {discount.redeemed_count}
+                          {discount.max_redemptions ? `/${discount.max_redemptions}` : ""}
+                        </small>
+                      </span>
+                      <span className={styles.collectionMeta}>Modifica</span>
+                    </button>
+                  ))}
+                </div>
+                {selectedDiscountId ? (
+                  <div className={styles.actions}>
+                    <button
+                      type="button"
+                      className={styles.dangerButton}
+                      onClick={() => handleDeleteDiscountCode(selectedDiscountId)}
+                      disabled={loading}
+                    >
+                      Elimina codice
                     </button>
                   </div>
                 ) : null}

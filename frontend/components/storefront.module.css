@@ -465,6 +465,12 @@
   font: inherit;
 }
 
+.discountHint {
+  color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
 .checkoutError {
   margin: 0;
   color: #8f2f1f;

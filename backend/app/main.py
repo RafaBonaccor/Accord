@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import settings
 from app.api.routes import router
-from app.db.database import Base, engine, ensure_schema_extensions, seed_products
+from app.db.database import Base, engine, ensure_schema_extensions, seed_discount_codes, seed_products
 
 
 @asynccontextmanager
@@ -13,6 +13,7 @@ async def lifespan(_: FastAPI):
     Base.metadata.create_all(bind=engine)
     ensure_schema_extensions()
     seed_products()
+    seed_discount_codes()
     yield
 
 

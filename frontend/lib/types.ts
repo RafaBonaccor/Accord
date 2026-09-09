@@ -47,6 +47,26 @@ export type CollectionInput = {
   description: string;
 };
 
+export type DiscountCode = {
+  id: number;
+  code: string;
+  percent_off: number;
+  active: boolean;
+  max_redemptions: number | null;
+  redeemed_count: number;
+  starts_at: string | null;
+  expires_at: string | null;
+};
+
+export type DiscountCodeInput = {
+  code: string;
+  percent_off: number;
+  active: boolean;
+  max_redemptions: number | null;
+  starts_at: string | null;
+  expires_at: string | null;
+};
+
 export type CartItem = {
   product: Product;
   quantity: number;

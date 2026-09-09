@@ -58,6 +58,9 @@ type StorefrontCopy = {
   cartClear: string;
   orderEmail: string;
   orderEmailPlaceholder: string;
+  discountCode: string;
+  discountCodePlaceholder: string;
+  discountCodeHint: string;
   totalLabel: string;
   checkoutPending: string;
   checkoutAction: string;
@@ -188,6 +191,9 @@ export const storefrontCopy: Record<Locale, StorefrontCopy> = {
     cartClear: "Svuota bag",
     orderEmail: "Email per l'ordine",
     orderEmailPlaceholder: "cliente@accordi.com",
+    discountCode: "Codice sconto",
+    discountCodePlaceholder: "Inserisci codice",
+    discountCodeHint: "Lo sconto verra applicato nella pagina sicura di Stripe.",
     totalLabel: "Totale",
     checkoutPending: "Reindirizzamento...",
     checkoutAction: "Vai al checkout",
@@ -242,6 +248,9 @@ export const storefrontCopy: Record<Locale, StorefrontCopy> = {
     cartClear: "Clear bag",
     orderEmail: "Order email",
     orderEmailPlaceholder: "client@accordi.com",
+    discountCode: "Discount code",
+    discountCodePlaceholder: "Enter code",
+    discountCodeHint: "The discount will be applied on the secure Stripe checkout page.",
     totalLabel: "Total",
     checkoutPending: "Redirecting...",
     checkoutAction: "Proceed to checkout",

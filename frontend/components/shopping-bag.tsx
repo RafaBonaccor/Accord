@@ -20,6 +20,7 @@ type Props = {
 export function ShoppingBag({ locale, continueHref, standalone = false }: Props) {
   const [checkoutPending, setCheckoutPending] = useState(false);
   const [email, setEmail] = useState("");
+  const [discountCode, setDiscountCode] = useState("");
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const { cart, itemCount, totalPriceCents, updateQuantity, removeFromCart, clearCart } = useCart();
   const copy = storefrontCopy[locale];
@@ -35,6 +36,7 @@ export function ShoppingBag({ locale, continueHref, standalone = false }: Props)
         })),
         locale,
         email || undefined,
+        discountCode.trim() || undefined,
       );
       window.location.href = url;
     } catch (error) {
@@ -128,6 +130,16 @@ export function ShoppingBag({ locale, continueHref, standalone = false }: Props)
             onChange={(event) => setEmail(event.target.value)}
             placeholder={copy.orderEmailPlaceholder}
           />
+        </label>
+        <label className={styles.emailField}>
+          <span>{copy.discountCode}</span>
+          <input
+            type="text"
+            value={discountCode}
+            onChange={(event) => setDiscountCode(event.target.value.toUpperCase())}
+            placeholder={copy.discountCodePlaceholder}
+          />
+          <small className={styles.discountHint}>{copy.discountCodeHint}</small>
         </label>
         <div className={styles.totalRow}>
           <span>{copy.totalLabel}</span>

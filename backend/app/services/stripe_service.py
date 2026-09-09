@@ -27,21 +27,33 @@ def create_checkout_session(
     currency: str,
     order_id: int,
     customer_email: str | None = None,
+    discount_code: str | None = None,
+    discount_percent_off: int | None = None,
 ) -> tuple[str, str]:
     if not settings.stripe_secret_key or settings.stripe_secret_key == "sk_test_your_key":
         raise StripeCheckoutConfigurationError("Stripe secret key is not configured")
 
     try:
-        session = stripe.checkout.Session.create(
-            mode="payment",
-            success_url=success_url,
-            cancel_url=cancel_url,
-            customer_email=customer_email,
-            billing_address_collection="required",
-            phone_number_collection={"enabled": True},
-            shipping_address_collection={"allowed_countries": shipping_countries()},
-            metadata={"order_id": str(order_id)},
-            line_items=[
+        coupon_id = None
+        if discount_code and discount_percent_off:
+            coupon = stripe.Coupon.create(
+                duration="once",
+                name=discount_code,
+                percent_off=discount_percent_off,
+                metadata={"accordi_discount_code": discount_code},
+            )
+            coupon_id = coupon.id
+
+        session_params = {
+            "mode": "payment",
+            "success_url": success_url,
+            "cancel_url": cancel_url,
+            "customer_email": customer_email,
+            "billing_address_collection": "required",
+            "phone_number_collection": {"enabled": True},
+            "shipping_address_collection": {"allowed_countries": shipping_countries()},
+            "metadata": {"order_id": str(order_id)},
+            "line_items": [
                 {
                     "quantity": item.quantity,
                     "price_data": {
@@ -55,7 +67,11 @@ def create_checkout_session(
                 }
                 for item in items
             ],
-        )
+        }
+        if coupon_id:
+            session_params["discounts"] = [{"coupon": coupon_id}]
+
+        session = stripe.checkout.Session.create(**session_params)
     except StripeError as exc:
         message = getattr(exc, "user_message", None) or str(exc)
         raise StripeCheckoutRequestError(message) from exc

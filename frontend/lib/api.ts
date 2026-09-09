@@ -1,4 +1,11 @@
-import { Collection, CollectionInput, Product, ProductInput } from "./types";
+import {
+  Collection,
+  CollectionInput,
+  DiscountCode,
+  DiscountCodeInput,
+  Product,
+  ProductInput,
+} from "./types";
 
 const SERVER_API_URL =
   process.env.BACKEND_URL ??
@@ -217,17 +224,48 @@ export async function deleteAdminCollection(collectionId: number): Promise<void>
   });
 }
 
+export async function getAdminDiscountCodes(): Promise<DiscountCode[]> {
+  const data = await adminRequest<{ items: DiscountCode[] }>("/discount-codes", {
+    method: "GET",
+  });
+  return data.items;
+}
+
+export async function createAdminDiscountCode(payload: DiscountCodeInput): Promise<DiscountCode> {
+  return adminRequest<DiscountCode>("/discount-codes", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function updateAdminDiscountCode(
+  discountId: number,
+  payload: Partial<DiscountCodeInput>,
+): Promise<DiscountCode> {
+  return adminRequest<DiscountCode>(`/discount-codes/${discountId}`, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function deleteAdminDiscountCode(discountId: number): Promise<void> {
+  await adminRequest<void>(`/discount-codes/${discountId}`, {
+    method: "DELETE",
+  });
+}
+
 export async function createCheckout(
   items: Array<{ product_id: number; quantity: number }>,
   locale: "it" | "en",
   email?: string,
+  discountCode?: string,
 ): Promise<string> {
   const response = await fetch(`${BROWSER_API_URL}/checkout`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ items, email, locale }),
+    body: JSON.stringify({ items, email, locale, discount_code: discountCode }),
   });
 
   if (!response.ok) {

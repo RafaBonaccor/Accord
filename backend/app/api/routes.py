@@ -1,5 +1,6 @@
 import logging
 import re
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Request, Response, status
 from pydantic import ValidationError
@@ -17,6 +18,7 @@ from app.db.database import (
     mark_order_payment_failed,
 )
 from app.models.collection import Collection
+from app.models.discount_code import DiscountCode
 from app.models.product import Product
 from app.models.product_image import ProductImage
 from app.schemas.collection import (
@@ -26,6 +28,13 @@ from app.schemas.collection import (
     CollectionUpdate,
 )
 from app.schemas.checkout import CheckoutItem, CheckoutRequest, CheckoutResponse
+from app.schemas.discount import (
+    DiscountCodeCreate,
+    DiscountCodeListResponse,
+    DiscountCodeResponse,
+    DiscountCodeUpdate,
+    normalize_discount_code,
+)
 from app.schemas.product import (
     ProductCreate,
     ProductImportRequest,
@@ -77,6 +86,51 @@ def ensure_valid_collection(db: Session, collection_id: int | None) -> None:
     if collection_id is None:
         return
     get_collection_or_404(db, collection_id)
+
+
+def get_discount_or_404(db: Session, discount_id: int) -> DiscountCode:
+    discount = db.query(DiscountCode).filter(DiscountCode.id == discount_id).first()
+    if not discount:
+        raise HTTPException(status_code=404, detail="Discount code not found")
+    return discount
+
+
+def ensure_unique_discount_code(db: Session, code: str, current_discount_id: int | None = None) -> None:
+    query = db.query(DiscountCode).filter(DiscountCode.code == normalize_discount_code(code))
+    if current_discount_id is not None:
+        query = query.filter(DiscountCode.id != current_discount_id)
+    if query.first():
+        raise HTTPException(status_code=409, detail="Discount code already exists")
+
+
+def active_discount_for_code(db: Session, code: str | None) -> DiscountCode | None:
+    normalized_code = normalize_discount_code(code or "")
+    if not normalized_code:
+        return None
+
+    discount = db.query(DiscountCode).filter(DiscountCode.code == normalized_code).first()
+    if not discount or not discount.active:
+        raise HTTPException(status_code=422, detail="Discount code is not valid")
+
+    now = datetime.now(timezone.utc)
+    starts_at = (
+        discount.starts_at.replace(tzinfo=timezone.utc)
+        if discount.starts_at and not discount.starts_at.tzinfo
+        else discount.starts_at
+    )
+    expires_at = (
+        discount.expires_at.replace(tzinfo=timezone.utc)
+        if discount.expires_at and not discount.expires_at.tzinfo
+        else discount.expires_at
+    )
+    if starts_at and starts_at > now:
+        raise HTTPException(status_code=422, detail="Discount code is not active yet")
+    if expires_at and expires_at < now:
+        raise HTTPException(status_code=422, detail="Discount code has expired")
+    if discount.max_redemptions is not None and discount.redeemed_count >= discount.max_redemptions:
+        raise HTTPException(status_code=422, detail="Discount code has reached its usage limit")
+
+    return discount
 
 
 def ensure_unique_slug(db: Session, slug: str, current_product_id: int | None = None) -> None:
@@ -548,8 +602,13 @@ def admin_import_products(payload: ProductImportRequest, db: Session = Depends(g
         seen_slugs.add(item.slug)
         ensure_unique_slug(db, item.slug)
         ensure_valid_collection(db, item.collection_id)
-        product = Product(**item.model_dump())
+        image_urls = _normalized_image_urls(item.image_url, *item.image_urls)
+        product_data = item.model_dump(exclude={"image_urls"})
+        product_data["image_url"] = image_urls[0]
+        product = Product(**product_data)
         db.add(product)
+        db.flush()
+        _replace_product_images(db, product, image_urls)
         created_products.append(product)
 
     db.commit()
@@ -557,6 +616,60 @@ def admin_import_products(payload: ProductImportRequest, db: Session = Depends(g
         db.refresh(product)
 
     return ProductImportResponse(imported_count=len(created_products), items=created_products)
+
+
+@router.get("/admin/discount-codes", response_model=DiscountCodeListResponse, dependencies=[Depends(require_admin)])
+def admin_list_discount_codes(db: Session = Depends(get_db)) -> DiscountCodeListResponse:
+    discounts = db.query(DiscountCode).order_by(DiscountCode.active.desc(), DiscountCode.id.desc()).all()
+    return DiscountCodeListResponse(items=discounts)
+
+
+@router.post(
+    "/admin/discount-codes",
+    response_model=DiscountCodeResponse,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(require_admin)],
+)
+def admin_create_discount_code(payload: DiscountCodeCreate, db: Session = Depends(get_db)) -> DiscountCodeResponse:
+    ensure_unique_discount_code(db, payload.code)
+    discount = DiscountCode(**payload.model_dump())
+    db.add(discount)
+    db.commit()
+    db.refresh(discount)
+    return discount
+
+
+@router.patch(
+    "/admin/discount-codes/{discount_id}",
+    response_model=DiscountCodeResponse,
+    dependencies=[Depends(require_admin)],
+)
+def admin_update_discount_code(
+    discount_id: int,
+    payload: DiscountCodeUpdate,
+    db: Session = Depends(get_db),
+) -> DiscountCodeResponse:
+    discount = get_discount_or_404(db, discount_id)
+    updates = payload.model_dump(exclude_unset=True)
+    if "code" in updates:
+        ensure_unique_discount_code(db, updates["code"], current_discount_id=discount.id)
+    for field, value in updates.items():
+        setattr(discount, field, value)
+    db.commit()
+    db.refresh(discount)
+    return discount
+
+
+@router.delete(
+    "/admin/discount-codes/{discount_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    dependencies=[Depends(require_admin)],
+)
+def admin_delete_discount_code(discount_id: int, db: Session = Depends(get_db)) -> Response:
+    discount = get_discount_or_404(db, discount_id)
+    db.delete(discount)
+    db.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.post("/checkout", response_model=CheckoutResponse)
@@ -585,11 +698,20 @@ def checkout(payload: CheckoutRequest, db: Session = Depends(get_db)) -> Checkou
             )
         )
 
+    discount = active_discount_for_code(db, payload.discount_code)
+    discount_amount_cents = 0
+    if discount:
+        discount_amount_cents = round(total_amount_cents * discount.percent_off / 100)
+    final_total_amount_cents = max(total_amount_cents - discount_amount_cents, 0)
+
     order = create_order_record(
         email=payload.email or "guest@example.com",
         currency=settings.stripe_price_currency,
-        total_amount_cents=total_amount_cents,
+        total_amount_cents=final_total_amount_cents,
         items=[item.model_dump() for item in line_items],
+        discount_code=discount.code if discount else None,
+        discount_percent_off=discount.percent_off if discount else None,
+        discount_amount_cents=discount_amount_cents,
     )
 
     try:
@@ -601,6 +723,8 @@ def checkout(payload: CheckoutRequest, db: Session = Depends(get_db)) -> Checkou
             currency=settings.stripe_price_currency,
             order_id=order.id,
             customer_email=payload.email,
+            discount_code=discount.code if discount else None,
+            discount_percent_off=discount.percent_off if discount else None,
         )
     except StripeCheckoutConfigurationError as exc:
         raise HTTPException(
