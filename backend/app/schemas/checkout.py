@@ -10,6 +10,7 @@ class CheckoutRequest(BaseModel):
     email: str | None = None
     locale: str | None = None
     discount_code: str | None = None
+    frontend_origin: str | None = None
     items: list[CheckoutRequestItem]
 
 

@@ -1,6 +1,7 @@
 import logging
 import re
 from datetime import datetime, timezone
+from urllib.parse import urlparse
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Request, Response, status
 from pydantic import ValidationError
@@ -61,6 +62,45 @@ logger = logging.getLogger(__name__)
 
 def checkout_base_path(locale: str | None) -> str:
     return "/en" if locale == "en" else ""
+
+
+def _clean_origin(value: str | None) -> str | None:
+    if not value:
+        return None
+    parsed = urlparse(value.strip())
+    if parsed.scheme not in {"http", "https"} or not parsed.netloc:
+        return None
+    return f"{parsed.scheme}://{parsed.netloc}"
+
+
+def _origin_from_request(request: Request) -> str | None:
+    host = request.headers.get("x-forwarded-host") or request.headers.get("host")
+    if not host:
+        return None
+    proto = request.headers.get("x-forwarded-proto") or request.url.scheme or "https"
+    proto = proto.split(",")[0].strip()
+    return _clean_origin(f"{proto}://{host.split(',')[0].strip()}")
+
+
+def _is_trusted_checkout_origin(value: str) -> bool:
+    hostname = urlparse(value).hostname or ""
+    return (
+        hostname in {"accordijewelry.com", "www.accordijewelry.com", "localhost", "127.0.0.1"}
+        or (hostname.endswith(".vercel.app") and hostname.startswith("accord-"))
+    )
+
+
+def checkout_origin(request: Request, requested_origin: str | None) -> str:
+    request_origin = _origin_from_request(request)
+    browser_origin = _clean_origin(requested_origin) or _clean_origin(request.headers.get("origin"))
+    configured_origin = _clean_origin(settings.frontend_url)
+
+    if browser_origin and _is_trusted_checkout_origin(browser_origin):
+        return browser_origin
+    if request_origin and _is_trusted_checkout_origin(request_origin):
+        return request_origin
+
+    return configured_origin or request_origin or "http://localhost:3000"
 
 
 def require_admin(authorization: str | None = Header(default=None)) -> None:
@@ -682,7 +722,7 @@ def admin_delete_discount_code(discount_id: int, db: Session = Depends(get_db)) 
 
 
 @router.post("/checkout", response_model=CheckoutResponse)
-def checkout(payload: CheckoutRequest, db: Session = Depends(get_db)) -> CheckoutResponse:
+def checkout(request: Request, payload: CheckoutRequest, db: Session = Depends(get_db)) -> CheckoutResponse:
     if not payload.items:
         raise HTTPException(status_code=400, detail="Cart is empty")
 
@@ -725,10 +765,11 @@ def checkout(payload: CheckoutRequest, db: Session = Depends(get_db)) -> Checkou
 
     try:
         base_path = checkout_base_path(payload.locale)
+        origin = checkout_origin(request, payload.frontend_origin)
         checkout_url, stripe_session_id = create_checkout_session(
             items=line_items,
-            success_url=f"{settings.frontend_url}{base_path}/checkout/success?order_id={order.id}",
-            cancel_url=f"{settings.frontend_url}{base_path}/checkout/cancel",
+            success_url=f"{origin}{base_path}/checkout/success?order_id={order.id}",
+            cancel_url=f"{origin}{base_path}/checkout/cancel",
             currency=settings.stripe_price_currency,
             order_id=order.id,
             customer_email=payload.email,

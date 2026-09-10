@@ -260,12 +260,19 @@ export async function createCheckout(
   email?: string,
   discountCode?: string,
 ): Promise<string> {
+  const frontendOrigin = typeof window !== "undefined" ? window.location.origin : undefined;
   const response = await fetch(`${BROWSER_API_URL}/checkout`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ items, email, locale, discount_code: discountCode }),
+    body: JSON.stringify({
+      items,
+      email,
+      locale,
+      discount_code: discountCode,
+      frontend_origin: frontendOrigin,
+    }),
   });
 
   if (!response.ok) {
