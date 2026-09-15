@@ -18,6 +18,8 @@ export type Product = {
   collection_name: string | null;
   collection_slug: string | null;
   featured: boolean;
+  in_stock: boolean;
+  stock_quantity: number;
   images: ProductImage[];
 };
 
@@ -31,6 +33,8 @@ export type ProductInput = {
   material: string;
   collection_id: number | null;
   featured: boolean;
+  in_stock: boolean;
+  stock_quantity: number;
   image_urls?: string[];
 };
 
@@ -65,6 +69,14 @@ export type DiscountCodeInput = {
   max_redemptions: number | null;
   starts_at: string | null;
   expires_at: string | null;
+};
+
+export type StockNotification = {
+  id: number;
+  product_id: number;
+  product_name: string | null;
+  email: string;
+  status: string;
 };
 
 export type CartItem = {

@@ -65,6 +65,7 @@ type StorefrontCopy = {
   checkoutPending: string;
   checkoutAction: string;
   checkoutUnavailable: string;
+  outOfStock: string;
 };
 
 type SupportPageCopy = {
@@ -198,6 +199,7 @@ export const storefrontCopy: Record<Locale, StorefrontCopy> = {
     checkoutPending: "Reindirizzamento...",
     checkoutAction: "Vai al checkout",
     checkoutUnavailable: "Checkout non disponibile",
+    outOfStock: "Out of stock",
   },
   en: {
     serviceHighlights: [
@@ -255,6 +257,7 @@ export const storefrontCopy: Record<Locale, StorefrontCopy> = {
     checkoutPending: "Redirecting...",
     checkoutAction: "Proceed to checkout",
     checkoutUnavailable: "Checkout unavailable",
+    outOfStock: "Out of stock",
   },
 };
 

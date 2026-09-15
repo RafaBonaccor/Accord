@@ -11,6 +11,7 @@ from app.models.order import Order
 from app.models.order_item import OrderItem
 from app.models.product import Product
 from app.models.product_image import ProductImage
+from app.models.stock_notification import StockNotification
 
 engine = create_engine(
     settings.database_url,
@@ -172,6 +173,26 @@ def ensure_schema_extensions() -> None:
             connection.execute(text(f"ALTER TABLE orders ADD COLUMN {column_name} {column_type}"))
         if "collection_id" not in product_columns:
             connection.execute(text(f"ALTER TABLE products ADD COLUMN collection_id {bigint_type}"))
+        if "in_stock" not in product_columns:
+            connection.execute(text("ALTER TABLE products ADD COLUMN in_stock BOOLEAN NOT NULL DEFAULT TRUE"))
+        if "stock_quantity" not in product_columns:
+            connection.execute(text("ALTER TABLE products ADD COLUMN stock_quantity INTEGER NOT NULL DEFAULT 1"))
+        if "stock_notifications" not in tables:
+            connection.execute(
+                text(
+                    f"""
+                    CREATE TABLE stock_notifications (
+                        id {identity_primary_key},
+                        product_id {bigint_type} NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+                        email VARCHAR(255) NOT NULL,
+                        status VARCHAR(40) NOT NULL DEFAULT 'pending',
+                        created_at {timestamp_type} NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                        CONSTRAINT uq_stock_notifications_product_email UNIQUE (product_id, email)
+                    )
+                    """
+                )
+            )
+            connection.execute(text("CREATE INDEX idx_stock_notifications_product_id ON stock_notifications (product_id)"))
 
 
 def create_order_record(
@@ -265,6 +286,14 @@ def mark_order_paid_from_checkout(
         order.shipping_postal_code = shipping_postal_code
         order.shipping_country = shipping_country
         order.paid_at = datetime.now(timezone.utc)
+        if not was_already_paid:
+            for item in order.items:
+                product = db.query(Product).filter(Product.id == item.product_id).first()
+                if not product:
+                    continue
+                product.stock_quantity = max(product.stock_quantity - item.quantity, 0)
+                if product.stock_quantity == 0:
+                    product.in_stock = False
         if order.discount_code and not was_already_paid:
             discount = db.query(DiscountCode).filter(DiscountCode.code == order.discount_code).first()
             if discount:

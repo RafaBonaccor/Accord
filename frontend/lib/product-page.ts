@@ -79,7 +79,7 @@ export function productStructuredData(locale: Locale, product: Product) {
         url: canonical,
         priceCurrency: "EUR",
         price: (product.price_cents / 100).toFixed(2),
-        availability: "https://schema.org/InStock",
+        availability: product.in_stock === false ? "https://schema.org/OutOfStock" : "https://schema.org/InStock",
         itemCondition: "https://schema.org/NewCondition",
       },
       url: canonical,

@@ -14,6 +14,7 @@ import {
   getAdminCollections,
   getAdminDiscountCodes,
   getAdminProducts,
+  getAdminStockNotifications,
   importAdminProducts,
   setAdminSessionToken,
   updateAdminCollection,
@@ -27,16 +28,18 @@ import {
   DiscountCodeInput,
   Product,
   ProductInput,
+  StockNotification,
 } from "../lib/types";
 import styles from "./admin-dashboard.module.css";
 
-type AdminSection = "overview" | "products" | "collections" | "discounts" | "import";
+type AdminSection = "overview" | "products" | "collections" | "discounts" | "stockAlerts" | "import";
 
 const sectionCopy: Array<{ id: AdminSection; label: string; body: string }> = [
   { id: "overview", label: "Overview", body: "KPI rapidi, stato catalogo e accesso alle azioni principali." },
   { id: "products", label: "Products", body: "Schede prodotto, assegnazione collezione e pubblicazione." },
   { id: "collections", label: "Collections", body: "Crea collezioni dedicate e abbinale ai prodotti dal menu a libretto." },
   { id: "discounts", label: "Discounts", body: "Codici sconto per checkout, campagne e clienti selezionati." },
+  { id: "stockAlerts", label: "Stock alerts", body: "Email raccolte dagli utenti sui prodotti out of stock." },
   { id: "import", label: "Import", body: "Caricamento massivo da JSON per collezioni capsule o stagionali." },
 ];
 
@@ -50,6 +53,8 @@ const emptyProduct: ProductInput = {
   material: "",
   collection_id: null,
   featured: false,
+  in_stock: true,
+  stock_quantity: 1,
 };
 
 const emptyCollection: CollectionInput = {
@@ -108,6 +113,7 @@ export function AdminDashboard({ adminSessionToken }: { adminSessionToken: strin
   const [products, setProducts] = useState<Product[]>([]);
   const [collections, setCollections] = useState<Collection[]>([]);
   const [discountCodes, setDiscountCodes] = useState<DiscountCode[]>([]);
+  const [stockNotifications, setStockNotifications] = useState<StockNotification[]>([]);
   const [form, setForm] = useState<ProductInput>(emptyProduct);
   const [collectionForm, setCollectionForm] = useState<CollectionInput>(emptyCollection);
   const [discountForm, setDiscountForm] = useState<DiscountCodeInput>(emptyDiscountCode);
@@ -128,6 +134,7 @@ export function AdminDashboard({ adminSessionToken }: { adminSessionToken: strin
   const categoriesCount = new Set(products.map((product) => product.category)).size;
   const uncategorizedCollectionCount = products.filter((product) => product.collection_id == null).length;
   const activeDiscountCount = discountCodes.filter((discount) => discount.active).length;
+  const outOfStockCount = products.filter((product) => product.in_stock === false).length;
 
   const selectedSection = sectionCopy.find((section) => section.id === activeSection) ?? sectionCopy[0];
   const selectedProduct = selectedProductId
@@ -211,16 +218,18 @@ export function AdminDashboard({ adminSessionToken }: { adminSessionToken: strin
     setLoading(true);
     setError(null);
     try {
-      const [loadedProducts, loadedCollections, loadedDiscountCodes] = await Promise.all([
+      const [loadedProducts, loadedCollections, loadedDiscountCodes, loadedStockNotifications] = await Promise.all([
         getAdminProducts(),
         getAdminCollections(),
         getAdminDiscountCodes(),
+        getAdminStockNotifications(),
       ]);
       setProducts(loadedProducts);
       setCollections(loadedCollections);
       setDiscountCodes(loadedDiscountCodes);
+      setStockNotifications(loadedStockNotifications);
       setStatus(
-        `Catalogo sincronizzato: ${loadedProducts.length} prodotti, ${loadedCollections.length} collezioni, ${loadedDiscountCodes.length} sconti.`,
+        `Catalogo sincronizzato: ${loadedProducts.length} prodotti, ${loadedCollections.length} collezioni, ${loadedDiscountCodes.length} sconti, ${loadedStockNotifications.length} avvisi.`,
       );
     } catch (loadError) {
       showAdminError(loadError);
@@ -278,6 +287,8 @@ export function AdminDashboard({ adminSessionToken }: { adminSessionToken: strin
       material: product.material,
       collection_id: product.collection_id,
       featured: product.featured,
+      in_stock: product.in_stock !== false,
+      stock_quantity: product.stock_quantity ?? 0,
     });
     setPriceInput(centsToEuroInput(product.price_cents));
     setSelectedImageFiles([]);
@@ -599,6 +610,14 @@ export function AdminDashboard({ adminSessionToken }: { adminSessionToken: strin
               <p className={styles.eyebrow}>Sconti attivi</p>
               <strong>{activeDiscountCount}</strong>
             </article>
+            <article className={styles.statsCard}>
+              <p className={styles.eyebrow}>Out of stock</p>
+              <strong>{outOfStockCount}</strong>
+            </article>
+            <article className={styles.statsCard}>
+              <p className={styles.eyebrow}>Avvisi stock</p>
+              <strong>{stockNotifications.length}</strong>
+            </article>
           </div>
 
           {activeSection === "overview" ? (
@@ -706,6 +725,22 @@ export function AdminDashboard({ adminSessionToken }: { adminSessionToken: strin
                       }}
                     />
                   </label>
+                  <label className={styles.field}>
+                    <span>Quantita stock</span>
+                    <input
+                      type="number"
+                      min="0"
+                      value={form.stock_quantity}
+                      onChange={(event) => {
+                        const nextQuantity = Math.max(Number(event.target.value), 0);
+                        setForm({
+                          ...form,
+                          stock_quantity: nextQuantity,
+                          in_stock: nextQuantity > 0 ? form.in_stock : false,
+                        });
+                      }}
+                    />
+                  </label>
                   <label className={styles.fieldWide}>
                     <span>Image URL</span>
                     <input
@@ -789,6 +824,14 @@ export function AdminDashboard({ adminSessionToken }: { adminSessionToken: strin
                     />
                     <span>Featured</span>
                   </label>
+                  <label className={styles.checkboxRow}>
+                    <input
+                      type="checkbox"
+                      checked={form.in_stock}
+                      onChange={(event) => setForm({ ...form, in_stock: event.target.checked })}
+                    />
+                    <span>Disponibile</span>
+                  </label>
                 </div>
                 <div className={styles.actions}>
                   <button type="button" className={styles.primaryButton} onClick={handleSaveProduct} disabled={loading}>
@@ -840,7 +883,8 @@ export function AdminDashboard({ adminSessionToken }: { adminSessionToken: strin
                       <span className={styles.productEditCopy}>
                         <strong>{product.name}</strong>
                         <small>
-                          {product.category || "Senza categoria"} · € {(product.price_cents / 100).toFixed(2)}
+                          {product.category || "Senza categoria"} · € {(product.price_cents / 100).toFixed(2)} ·{" "}
+                          {product.in_stock === false ? "Out of stock" : `${product.stock_quantity ?? 0} disponibili`}
                         </small>
                         <small>{product.collection_name ?? "Nessuna collection"}</small>
                       </span>
@@ -855,6 +899,7 @@ export function AdminDashboard({ adminSessionToken }: { adminSessionToken: strin
                       <th>Collection</th>
                       <th>Categoria</th>
                       <th>Prezzo</th>
+                      <th>Disponibilita</th>
                       <th>Azioni</th>
                     </tr>
                   </thead>
@@ -873,6 +918,11 @@ export function AdminDashboard({ adminSessionToken }: { adminSessionToken: strin
                           <span>{product.material}</span>
                         </td>
                         <td>€ {(product.price_cents / 100).toFixed(2)}</td>
+                        <td>
+                          {product.in_stock === false
+                            ? "Out of stock"
+                            : `${product.stock_quantity ?? 0} disponibili`}
+                        </td>
                         <td>
                           <div className={styles.inlineActions}>
                             <button type="button" className={styles.secondaryButton} onClick={() => fillForm(product)}>
@@ -1104,6 +1154,40 @@ export function AdminDashboard({ adminSessionToken }: { adminSessionToken: strin
                 ) : null}
               </article>
             </div>
+          ) : null}
+
+          {activeSection === "stockAlerts" ? (
+            <article className={styles.tableWrap}>
+              <p className={styles.eyebrow}>Stock alerts</p>
+              <h3>Richieste avvisami</h3>
+              <table className={styles.table}>
+                <thead>
+                  <tr>
+                    <th>Prodotto</th>
+                    <th>Email</th>
+                    <th>Stato</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {stockNotifications.map((notification) => (
+                    <tr key={notification.id}>
+                      <td>
+                        <strong>{notification.product_name ?? `Prodotto #${notification.product_id}`}</strong>
+                        <br />
+                        <span>#{notification.product_id}</span>
+                      </td>
+                      <td>{notification.email}</td>
+                      <td>{notification.status}</td>
+                    </tr>
+                  ))}
+                  {!stockNotifications.length ? (
+                    <tr>
+                      <td colSpan={3}>Nessuna richiesta avvisami ricevuta.</td>
+                    </tr>
+                  ) : null}
+                </tbody>
+              </table>
+            </article>
           ) : null}
 
           {activeSection === "import" ? (

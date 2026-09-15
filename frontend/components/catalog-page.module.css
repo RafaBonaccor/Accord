@@ -136,6 +136,21 @@
   background: var(--panel-soft);
 }
 
+.stockBadge {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 1;
+  padding: 7px 10px;
+  background: #ffffff;
+  border: 1px solid var(--line);
+  color: #8f2f1f;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
 .imageWrap a {
   display: block;
   width: 100%;

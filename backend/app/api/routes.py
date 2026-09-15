@@ -23,6 +23,7 @@ from app.models.collection import Collection
 from app.models.discount_code import DiscountCode
 from app.models.product import Product
 from app.models.product_image import ProductImage
+from app.models.stock_notification import StockNotification
 from app.schemas.collection import (
     CollectionCreate,
     CollectionListResponse,
@@ -43,6 +44,9 @@ from app.schemas.product import (
     ProductImportResponse,
     ProductListResponse,
     ProductResponse,
+    StockNotificationCreate,
+    StockNotificationListResponse,
+    StockNotificationResponse,
     ProductUpdate,
 )
 from app.services.stripe_service import (
@@ -339,6 +343,8 @@ async def parse_product_create_payload(request: Request) -> ProductCreate:
         "material": str(form.get("material") or "").strip(),
         "collection_id": _parse_optional_int(str(form.get("collection_id")) if form.get("collection_id") is not None else None),
         "featured": _parse_bool(str(form.get("featured")) if form.get("featured") is not None else None),
+        "in_stock": _parse_bool(str(form.get("in_stock"))) if form.get("in_stock") is not None else True,
+        "stock_quantity": int(str(form.get("stock_quantity") or "1").strip() or "1"),
         "image_urls": _normalized_image_urls(image_url, *uploaded_image_urls),
     }
     if not payload["slug"]:
@@ -398,6 +404,8 @@ async def parse_product_update_payload(request: Request) -> ProductUpdate:
         "material": lambda v: v.strip(),
         "collection_id": _parse_optional_int,
         "featured": _parse_bool,
+        "in_stock": _parse_bool,
+        "stock_quantity": lambda v: int(v.strip() or "0"),
     }
 
     for field_name, parser in field_map.items():
@@ -512,6 +520,30 @@ def get_product_by_slug(slug: str, db: Session = Depends(get_db)) -> ProductResp
     return product
 
 
+@router.post("/stock-notifications", response_model=StockNotificationResponse, status_code=status.HTTP_201_CREATED)
+def create_stock_notification(
+    payload: StockNotificationCreate,
+    db: Session = Depends(get_db),
+) -> StockNotificationResponse:
+    product = get_product_or_404(db, payload.product_id)
+    if product.in_stock:
+        raise HTTPException(status_code=409, detail="Product is already in stock")
+    email = payload.email.strip().lower()
+    existing = (
+        db.query(StockNotification)
+        .filter(StockNotification.product_id == product.id, StockNotification.email == email)
+        .first()
+    )
+    if existing:
+        return existing
+
+    notification = StockNotification(product_id=product.id, email=email)
+    db.add(notification)
+    db.commit()
+    db.refresh(notification)
+    return notification
+
+
 @router.get("/admin/products", response_model=ProductListResponse, dependencies=[Depends(require_admin)])
 def admin_list_products(db: Session = Depends(get_db)) -> ProductListResponse:
     products = db.query(Product).order_by(Product.featured.desc(), Product.id.desc()).all()
@@ -583,6 +615,8 @@ async def admin_create_product(request: Request, db: Session = Depends(get_db)) 
     payload = await parse_product_create_payload(request)
     if not payload.slug:
         payload = payload.model_copy(update={"slug": _slugify_value(payload.name)})
+    if payload.stock_quantity == 0:
+        payload = payload.model_copy(update={"in_stock": False})
     ensure_unique_slug(db, payload.slug)
     ensure_valid_collection(db, payload.collection_id)
     image_urls = _normalized_image_urls(payload.image_url, *payload.image_urls)
@@ -607,6 +641,10 @@ async def admin_update_product(product_id: int, request: Request, db: Session = 
         ensure_unique_slug(db, updates["slug"], current_product_id=product.id)
     if "collection_id" in updates:
         ensure_valid_collection(db, updates["collection_id"])
+    if updates.get("stock_quantity") == 0:
+        updates["in_stock"] = False
+    elif "stock_quantity" in updates and updates["stock_quantity"] > 0 and updates.get("in_stock") is not False:
+        updates["in_stock"] = True
     for field, value in updates.items():
         setattr(product, field, value)
     if image_urls:
@@ -633,6 +671,16 @@ def admin_delete_product(product_id: int, db: Session = Depends(get_db)) -> Resp
             detail="Product cannot be deleted because it is linked to one or more orders.",
         ) from exc
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.get(
+    "/admin/stock-notifications",
+    response_model=StockNotificationListResponse,
+    dependencies=[Depends(require_admin)],
+)
+def admin_list_stock_notifications(db: Session = Depends(get_db)) -> StockNotificationListResponse:
+    notifications = db.query(StockNotification).order_by(StockNotification.id.desc()).all()
+    return StockNotificationListResponse(items=notifications)
 
 
 @router.post(
@@ -736,6 +784,13 @@ def checkout(request: Request, payload: CheckoutRequest, db: Session = Depends(g
         product = product_map.get(item.product_id)
         if not product:
             raise HTTPException(status_code=404, detail=f"Product {item.product_id} not found")
+        if not product.in_stock:
+            raise HTTPException(status_code=422, detail=f"Product '{product.name}' is out of stock")
+        if item.quantity > product.stock_quantity:
+            raise HTTPException(
+                status_code=422,
+                detail=f"Only {product.stock_quantity} unit(s) available for '{product.name}'",
+            )
         total_amount_cents += product.price_cents * item.quantity
         line_items.append(
             CheckoutItem(

@@ -26,6 +26,14 @@ function parseBoolean(formData: FormData, field: "featured"): boolean {
   return value === "true" || value === "1" || value === "on";
 }
 
+function parseBooleanDefault(formData: FormData, field: "in_stock", defaultValue: boolean): boolean {
+  if (!formData.has(field)) {
+    return defaultValue;
+  }
+  const value = String(formData.get(field) ?? "").trim().toLowerCase();
+  return value === "true" || value === "1" || value === "on";
+}
+
 export async function parseProductMultipartForm(formData: FormData): Promise<ProductInput> {
   const file = formData.get("file");
   const galleryFiles = formData.getAll("files").filter((value): value is File => value instanceof File && value.size > 0);
@@ -57,6 +65,8 @@ export async function parseProductMultipartForm(formData: FormData): Promise<Pro
     material: parseRequiredString(formData, "material"),
     collection_id: parseNullableInteger(formData, "collection_id"),
     featured: parseBoolean(formData, "featured"),
+    in_stock: parseBooleanDefault(formData, "in_stock", true),
+    stock_quantity: Number(formData.get("stock_quantity") ?? "1"),
     image_urls: imageUrls,
   };
 }

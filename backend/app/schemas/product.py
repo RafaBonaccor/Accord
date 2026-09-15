@@ -1,4 +1,4 @@
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class ProductImageResponse(BaseModel):
@@ -23,6 +23,8 @@ class ProductResponse(BaseModel):
     collection_name: str | None
     collection_slug: str | None
     featured: bool
+    in_stock: bool
+    stock_quantity: int
     images: list[ProductImageResponse] = Field(default_factory=list)
 
 
@@ -40,6 +42,8 @@ class ProductCreate(BaseModel):
     material: str = Field(default="", max_length=80)
     collection_id: int | None = None
     featured: bool = False
+    in_stock: bool = True
+    stock_quantity: int = Field(default=1, ge=0)
     image_urls: list[str] = Field(default_factory=list, max_length=12)
 
 
@@ -53,6 +57,8 @@ class ProductUpdate(BaseModel):
     material: str | None = Field(default=None, max_length=80)
     collection_id: int | None = None
     featured: bool | None = None
+    in_stock: bool | None = None
+    stock_quantity: int | None = Field(default=None, ge=0)
     image_urls: list[str] | None = Field(default=None, max_length=12)
 
 
@@ -63,3 +69,30 @@ class ProductImportRequest(BaseModel):
 class ProductImportResponse(BaseModel):
     imported_count: int
     items: list[ProductResponse]
+
+
+class StockNotificationCreate(BaseModel):
+    product_id: int
+    email: str = Field(min_length=5, max_length=255)
+
+    @field_validator("email")
+    @classmethod
+    def normalize_email(cls, value: str) -> str:
+        normalized = value.strip().lower()
+        if "@" not in normalized or "." not in normalized.rsplit("@", 1)[-1]:
+            raise ValueError("Invalid email address")
+        return normalized
+
+
+class StockNotificationResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    product_id: int
+    product_name: str | None = None
+    email: str
+    status: str
+
+
+class StockNotificationListResponse(BaseModel):
+    items: list[StockNotificationResponse]

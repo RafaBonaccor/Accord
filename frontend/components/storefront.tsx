@@ -32,6 +32,14 @@ export function Storefront({ products, locale }: Props) {
     earrings: routeFor(locale, "earrings"),
     necklaces: routeFor(locale, "necklaces"),
   };
+  const isUnavailable = (product: Product) => product.in_stock === false || (product.stock_quantity ?? 1) <= 0;
+
+  function handleAddToCart(product: Product) {
+    if (isUnavailable(product)) {
+      return;
+    }
+    addToCart(product);
+  }
 
   return (
     <main className={styles.page} lang={locale}>
@@ -90,6 +98,7 @@ export function Storefront({ products, locale }: Props) {
                         className={styles.productImage}
                       />
                     </Link>
+                    {isUnavailable(product) ? <span className={styles.stockBadge}>{copy.outOfStock}</span> : null}
                   </div>
                   <div className={styles.cardBody}>
                     <div>
@@ -102,8 +111,8 @@ export function Storefront({ products, locale }: Props) {
                     </div>
                     <div className={styles.cardFooter}>
                       <span>€ {(product.price_cents / 100).toFixed(2)}</span>
-                      <button type="button" onClick={() => addToCart(product)}>
-                        {copy.addToCart}
+                      <button type="button" onClick={() => handleAddToCart(product)} disabled={isUnavailable(product)}>
+                        {isUnavailable(product) ? copy.outOfStock : copy.addToCart}
                       </button>
                     </div>
                   </div>
@@ -133,6 +142,7 @@ export function Storefront({ products, locale }: Props) {
                         className={styles.productImage}
                       />
                     </Link>
+                    {isUnavailable(product) ? <span className={styles.stockBadge}>{copy.outOfStock}</span> : null}
                   </div>
                   <div className={styles.featureCardBody}>
                     <p className={styles.meta}>
@@ -144,8 +154,8 @@ export function Storefront({ products, locale }: Props) {
                     <p className={styles.description}>{product.description}</p>
                     <div className={styles.cardFooter}>
                       <span>€ {(product.price_cents / 100).toFixed(2)}</span>
-                      <button type="button" onClick={() => addToCart(product)}>
-                        {copy.addToCart}
+                      <button type="button" onClick={() => handleAddToCart(product)} disabled={isUnavailable(product)}>
+                        {isUnavailable(product) ? copy.outOfStock : copy.addToCart}
                       </button>
                     </div>
                   </div>
@@ -172,6 +182,7 @@ export function Storefront({ products, locale }: Props) {
                         className={styles.productImage}
                       />
                     </Link>
+                    {isUnavailable(product) ? <span className={styles.stockBadge}>{copy.outOfStock}</span> : null}
                   </div>
                   <div className={styles.cardBody}>
                     <div>
@@ -184,8 +195,8 @@ export function Storefront({ products, locale }: Props) {
                     </div>
                     <div className={styles.cardFooter}>
                       <span>€ {(product.price_cents / 100).toFixed(2)}</span>
-                      <button type="button" onClick={() => addToCart(product)}>
-                        {copy.addToCart}
+                      <button type="button" onClick={() => handleAddToCart(product)} disabled={isUnavailable(product)}>
+                        {isUnavailable(product) ? copy.outOfStock : copy.addToCart}
                       </button>
                     </div>
                   </div>

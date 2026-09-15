@@ -21,6 +21,8 @@ class Product(Base):
     material: Mapped[str] = mapped_column(String(80), nullable=False)
     collection_id: Mapped[int | None] = mapped_column(ForeignKey("collections.id"), nullable=True, index=True)
     featured: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    in_stock: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    stock_quantity: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
@@ -40,6 +42,7 @@ class Product(Base):
         cascade="all, delete-orphan",
         order_by="ProductImage.position",
     )
+    stock_notifications = relationship("StockNotification", back_populates="product", cascade="all, delete-orphan")
 
     @property
     def collection_name(self) -> str | None:

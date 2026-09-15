@@ -5,6 +5,7 @@ import {
   DiscountCodeInput,
   Product,
   ProductInput,
+  StockNotification,
 } from "./types";
 
 const SERVER_API_URL =
@@ -130,6 +131,8 @@ function buildProductFormData(payload: ProductInput, files?: File[] | File | nul
   formData.append("material", payload.material);
   formData.append("collection_id", payload.collection_id == null ? "" : String(payload.collection_id));
   formData.append("featured", payload.featured ? "true" : "false");
+  formData.append("in_stock", payload.in_stock ? "true" : "false");
+  formData.append("stock_quantity", String(payload.stock_quantity));
   const imageFiles = Array.isArray(files) ? files : files ? [files] : [];
   for (const file of imageFiles) {
     formData.append("files", file);
@@ -171,6 +174,8 @@ export async function updateAdminProduct(
     material: payload.material ?? "",
     collection_id: payload.collection_id ?? null,
     featured: payload.featured ?? false,
+    in_stock: payload.in_stock ?? true,
+    stock_quantity: payload.stock_quantity ?? 0,
   };
   return adminRequest<Product>(`/products/${productId}`, {
     method: "PATCH",
@@ -254,6 +259,13 @@ export async function deleteAdminDiscountCode(discountId: number): Promise<void>
   });
 }
 
+export async function getAdminStockNotifications(): Promise<StockNotification[]> {
+  const data = await adminRequest<{ items: StockNotification[] }>("/stock-notifications", {
+    method: "GET",
+  });
+  return data.items;
+}
+
 export async function createCheckout(
   items: Array<{ product_id: number; quantity: number }>,
   locale: "it" | "en",
@@ -288,4 +300,25 @@ export async function createCheckout(
 
   const data = (await response.json()) as { url: string };
   return data.url;
+}
+
+export async function createStockNotification(productId: number, email: string): Promise<void> {
+  const response = await fetch(`${BROWSER_API_URL}/stock-notifications`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ product_id: productId, email }),
+  });
+
+  if (!response.ok) {
+    let message = "Unable to save stock notification";
+    try {
+      const data = (await response.json()) as { detail?: string };
+      if (data.detail) {
+        message = data.detail;
+      }
+    } catch {}
+    throw new Error(message);
+  }
 }

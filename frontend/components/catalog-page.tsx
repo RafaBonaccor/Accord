@@ -59,6 +59,8 @@ export function CatalogPage(props: Props) {
   const pageCopy = locale === "it" ? "Pagina" : "Page";
   const prevCopy = locale === "it" ? "Precedente" : "Previous";
   const nextCopy = locale === "it" ? "Successiva" : "Next";
+  const outOfStockCopy = "Out of stock";
+  const isUnavailable = (product: Product) => product.in_stock === false || (product.stock_quantity ?? 1) <= 0;
 
   return (
     <main className={styles.page}>
@@ -106,6 +108,7 @@ export function CatalogPage(props: Props) {
                     className={styles.image}
                   />
                 </Link>
+                {isUnavailable(product) ? <span className={styles.stockBadge}>{outOfStockCopy}</span> : null}
               </div>
               <div className={styles.cardBody}>
                 <p className={styles.meta}>
