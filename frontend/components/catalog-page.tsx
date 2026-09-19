@@ -5,6 +5,7 @@ import { Locale } from "../lib/i18n";
 import { productPath } from "../lib/product-routes";
 import { Product } from "../lib/types";
 import styles from "./catalog-page.module.css";
+import { StockNotifyButton } from "./stock-notify-button";
 
 type StoryBlock = {
   title: string;
@@ -108,7 +109,12 @@ export function CatalogPage(props: Props) {
                     className={styles.image}
                   />
                 </Link>
-                {isUnavailable(product) ? <span className={styles.stockBadge}>{outOfStockCopy}</span> : null}
+                {isUnavailable(product) ? (
+                  <div className={styles.stockActions}>
+                    <span className={styles.stockBadge}>{outOfStockCopy}</span>
+                    <StockNotifyButton locale={locale} productId={product.id} productName={product.name} />
+                  </div>
+                ) : null}
               </div>
               <div className={styles.cardBody}>
                 <p className={styles.meta}>

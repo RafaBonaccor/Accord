@@ -136,11 +136,17 @@
   background: var(--panel-soft);
 }
 
-.stockBadge {
+.stockActions {
   position: absolute;
   top: 12px;
   left: 12px;
   z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.stockBadge {
   padding: 7px 10px;
   background: #ffffff;
   border: 1px solid var(--line);

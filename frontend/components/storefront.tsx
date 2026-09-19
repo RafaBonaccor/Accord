@@ -6,6 +6,7 @@ import { useState } from "react";
 
 import { useCart } from "../hooks/use-cart";
 import { ShoppingBag } from "./shopping-bag";
+import { StockNotifyButton } from "./stock-notify-button";
 import { storefrontCopy } from "../lib/copy";
 import { Locale } from "../lib/i18n";
 import { productPath } from "../lib/product-routes";
@@ -98,7 +99,12 @@ export function Storefront({ products, locale }: Props) {
                         className={styles.productImage}
                       />
                     </Link>
-                    {isUnavailable(product) ? <span className={styles.stockBadge}>{copy.outOfStock}</span> : null}
+                    {isUnavailable(product) ? (
+                      <div className={styles.stockActions}>
+                        <span className={styles.stockBadge}>{copy.outOfStock}</span>
+                        <StockNotifyButton locale={locale} productId={product.id} productName={product.name} />
+                      </div>
+                    ) : null}
                   </div>
                   <div className={styles.cardBody}>
                     <div>
@@ -142,7 +148,12 @@ export function Storefront({ products, locale }: Props) {
                         className={styles.productImage}
                       />
                     </Link>
-                    {isUnavailable(product) ? <span className={styles.stockBadge}>{copy.outOfStock}</span> : null}
+                    {isUnavailable(product) ? (
+                      <div className={styles.stockActions}>
+                        <span className={styles.stockBadge}>{copy.outOfStock}</span>
+                        <StockNotifyButton locale={locale} productId={product.id} productName={product.name} />
+                      </div>
+                    ) : null}
                   </div>
                   <div className={styles.featureCardBody}>
                     <p className={styles.meta}>
@@ -182,7 +193,12 @@ export function Storefront({ products, locale }: Props) {
                         className={styles.productImage}
                       />
                     </Link>
-                    {isUnavailable(product) ? <span className={styles.stockBadge}>{copy.outOfStock}</span> : null}
+                    {isUnavailable(product) ? (
+                      <div className={styles.stockActions}>
+                        <span className={styles.stockBadge}>{copy.outOfStock}</span>
+                        <StockNotifyButton locale={locale} productId={product.id} productName={product.name} />
+                      </div>
+                    ) : null}
                   </div>
                   <div className={styles.cardBody}>
                     <div>
