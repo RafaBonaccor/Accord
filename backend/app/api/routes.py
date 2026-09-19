@@ -54,6 +54,7 @@ from app.services.stripe_service import (
     StripeCheckoutRequestError,
     create_checkout_session,
 )
+from app.services.email_service import send_stock_notification_confirmation
 from app.services.storage_service import (
     StorageConfigurationError,
     StorageUploadError,
@@ -534,13 +535,17 @@ def create_stock_notification(
         .filter(StockNotification.product_id == product.id, StockNotification.email == email)
         .first()
     )
+    product.notify_request_count = (product.notify_request_count or 0) + 1
     if existing:
+        db.commit()
+        send_stock_notification_confirmation(to_email=email, product=product, locale=payload.locale)
         return existing
 
     notification = StockNotification(product_id=product.id, email=email)
     db.add(notification)
     db.commit()
     db.refresh(notification)
+    send_stock_notification_confirmation(to_email=email, product=product, locale=payload.locale)
     return notification
 
 

@@ -302,13 +302,13 @@ export async function createCheckout(
   return data.url;
 }
 
-export async function createStockNotification(productId: number, email: string): Promise<void> {
+export async function createStockNotification(productId: number, email: string, locale: "it" | "en" = "it"): Promise<void> {
   const response = await fetch(`${BROWSER_API_URL}/stock-notifications`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ product_id: productId, email }),
+    body: JSON.stringify({ product_id: productId, email, locale }),
   });
 
   if (!response.ok) {

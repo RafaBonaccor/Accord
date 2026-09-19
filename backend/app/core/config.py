@@ -18,6 +18,13 @@ class Settings(BaseSettings):
     supabase_storage_bucket: str = "products"
     frontend_url: str = default_frontend_url
     admin_api_token: str = "change-me-admin-token"
+    smtp_host: str = ""
+    smtp_port: int = 587
+    smtp_username: str = ""
+    smtp_password: str = ""
+    smtp_from_email: str = ""
+    smtp_from_name: str = "Accordi Jewelry"
+    smtp_use_tls: bool = True
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 

@@ -74,7 +74,7 @@ export function ProductPurchaseActions({ locale, product }: Props) {
     setNotifyMessage(null);
     setNotifyError(null);
     try {
-      await createStockNotification(product.id, email);
+      await createStockNotification(product.id, email, locale);
       setNotifyMessage(labels.notifySuccess);
       setEmail("");
     } catch {

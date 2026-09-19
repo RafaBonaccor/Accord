@@ -55,7 +55,7 @@ export function StockNotifyButton({ locale, productId, productName }: Props) {
     setError(null);
 
     try {
-      await createStockNotification(productId, email);
+      await createStockNotification(productId, email, locale);
       setMessage(labels.success);
       setEmail("");
     } catch {

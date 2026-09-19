@@ -23,6 +23,7 @@ class Product(Base):
     featured: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     in_stock: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     stock_quantity: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+    notify_request_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,

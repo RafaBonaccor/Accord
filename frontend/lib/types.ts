@@ -20,6 +20,7 @@ export type Product = {
   featured: boolean;
   in_stock: boolean;
   stock_quantity: number;
+  notify_request_count: number;
   images: ProductImage[];
 };
 

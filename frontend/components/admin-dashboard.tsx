@@ -886,7 +886,10 @@ export function AdminDashboard({ adminSessionToken }: { adminSessionToken: strin
                           {product.category || "Senza categoria"} · € {(product.price_cents / 100).toFixed(2)} ·{" "}
                           {product.in_stock === false ? "Out of stock" : `${product.stock_quantity ?? 0} disponibili`}
                         </small>
-                        <small>{product.collection_name ?? "Nessuna collection"}</small>
+                        <small>
+                          {product.collection_name ?? "Nessuna collection"} · Avvisami:{" "}
+                          {product.notify_request_count ?? 0}
+                        </small>
                       </span>
                       <span className={styles.productEditAction}>Modifica</span>
                     </button>
@@ -900,6 +903,7 @@ export function AdminDashboard({ adminSessionToken }: { adminSessionToken: strin
                       <th>Categoria</th>
                       <th>Prezzo</th>
                       <th>Disponibilita</th>
+                      <th>Avvisami</th>
                       <th>Azioni</th>
                     </tr>
                   </thead>
@@ -923,6 +927,7 @@ export function AdminDashboard({ adminSessionToken }: { adminSessionToken: strin
                             ? "Out of stock"
                             : `${product.stock_quantity ?? 0} disponibili`}
                         </td>
+                        <td>{product.notify_request_count ?? 0}</td>
                         <td>
                           <div className={styles.inlineActions}>
                             <button type="button" className={styles.secondaryButton} onClick={() => fillForm(product)}>

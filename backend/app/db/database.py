@@ -177,6 +177,8 @@ def ensure_schema_extensions() -> None:
             connection.execute(text("ALTER TABLE products ADD COLUMN in_stock BOOLEAN NOT NULL DEFAULT TRUE"))
         if "stock_quantity" not in product_columns:
             connection.execute(text("ALTER TABLE products ADD COLUMN stock_quantity INTEGER NOT NULL DEFAULT 1"))
+        if "notify_request_count" not in product_columns:
+            connection.execute(text("ALTER TABLE products ADD COLUMN notify_request_count INTEGER NOT NULL DEFAULT 0"))
         if "stock_notifications" not in tables:
             connection.execute(
                 text(

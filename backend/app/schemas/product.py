@@ -25,6 +25,7 @@ class ProductResponse(BaseModel):
     featured: bool
     in_stock: bool
     stock_quantity: int
+    notify_request_count: int
     images: list[ProductImageResponse] = Field(default_factory=list)
 
 
@@ -74,6 +75,7 @@ class ProductImportResponse(BaseModel):
 class StockNotificationCreate(BaseModel):
     product_id: int
     email: str = Field(min_length=5, max_length=255)
+    locale: str = Field(default="it", pattern="^(it|en)$")
 
     @field_validator("email")
     @classmethod
